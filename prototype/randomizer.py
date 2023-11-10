@@ -2,17 +2,6 @@ from web3 import Web3
 from contract import ContractInterface
 from utils.elgamalEncryptor import ElgamalEncryptor
 
-"""
-秘钥管理
-
-Randomizer 仅需保存Requester的公钥用于重加密; 
-
-Requester 需要保存自己的公私钥;
-
-Submitter 仅需保存Requester的公钥;
-
-"""
-
 class Randomizer:
     # 输入Requester的公钥
     def __init__(self, provider_url, contract_address, contract_abi, requester_pk_file , id = 0):
