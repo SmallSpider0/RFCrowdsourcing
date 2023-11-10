@@ -1,7 +1,8 @@
 from web3 import Web3
 from eth_abi import decode
-from web3.contract import Contract
+from threading import Thread
 import json
+import time
 
 class ContractInterface:
     def __init__(self, provider_url: str, contract_address: str, contract_abi: list):
@@ -23,7 +24,13 @@ class ContractInterface:
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         return txn_hash
 
-    def listen_for_events(self, event_name: str, event_handler):
+    def log_loop(self, event_filter, event_handler, poll_interval):
+        while True:
+            for event in event_filter.get_new_entries():
+                event_handler(event, self.prase_event(event))
+            time.sleep(poll_interval)
+
+    def listen_for_events(self, event_name: str, event_handler, is_async = False):
         """
         Listen for events and handle them using the provided event_handler function.
         """
@@ -32,10 +39,11 @@ class ContractInterface:
             "address": self.contract.address,
             "topics": [event_signature_hash,],
         })
-        while True:
-            for event in event_filter.get_new_entries():
-                # 将参数解析后返回
-                event_handler(event, self.prase_event(event))
+        if is_async:
+            worker = Thread(target=self.log_loop, args=(event_filter, event_handler, 1), daemon=True)
+            worker.start()
+        else:
+           self.log_loop(event_filter, event_handler, 1) 
 
     def prase_event(self, event):
         event_args = {}
@@ -78,8 +86,6 @@ class ContractInterface:
 
 
 
-
-
 if __name__=="__main__":
     # 测试参数定义
     provider_url = "http://127.0.0.1:8545"
@@ -98,4 +104,8 @@ if __name__=="__main__":
     # 监听事件
     def handle_integer_received(raw_event, args):
         print(args)
-    contract_interface.listen_for_events("IntegerReceived(uint256)", handle_integer_received)
+    contract_interface.listen_for_events("IntegerReceived(uint256)", handle_integer_received, is_async=True)
+
+    # 使用异步模式监听事件时 主程序可以运行其它代码
+    for _ in range(10):
+        time.sleep(1)

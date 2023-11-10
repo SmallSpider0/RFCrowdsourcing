@@ -5,11 +5,11 @@ from utils.elgamalEncryptor import ElgamalEncryptor
 """
 秘钥管理
 
-Randomizer 仅需保存Requester的公钥用于重加密
+Randomizer 仅需保存Requester的公钥用于重加密; 
 
-Requester 需要保存自己的公私钥
+Requester 需要保存自己的公私钥;
 
-Submitter 仅需保存Requester的公钥
+Submitter 仅需保存Requester的公钥;
 
 """
 
