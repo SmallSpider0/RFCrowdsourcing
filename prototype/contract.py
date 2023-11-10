@@ -13,11 +13,11 @@ class ContractInterface:
         Send a transaction to the contract.
         """
         func = getattr(self.contract.functions, function_name)(*args, **kwargs)
-        txn = func.buildTransaction({
+        txn = func.build_transaction({
             'from': account,
             'nonce': self.web3.eth.get_transaction_count(account),
             'gas': 2000000,
-            'gasPrice': self.web3.toWei('50', 'gwei'),
+            'gasPrice': self.web3.to_wei('10', 'gwei'),
         })
         signed_txn = self.web3.eth.account.sign_transaction(txn, private_key)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
@@ -77,17 +77,25 @@ class ContractInterface:
         return event_args
 
 
-def handle_integer_received(raw_event, args):
-    print(args)
+
 
 
 if __name__=="__main__":
-    # 示例初始化（需要替换成您的具体参数）
+    # 测试参数定义
     provider_url = "http://127.0.0.1:8545"
     contract_address = "0xd7357e2A30760f94971bC8Eb10f5dd0D1cFdB6Ae"
+    account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
+    private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
+
+    # 合约对象初始化
     with open("solidity/contract-abi.json") as file:
         contract_abi = json.loads(file.read()) # 智能合约ABI
-
     contract_interface = ContractInterface(provider_url, contract_address, contract_abi)
-    # contract_interface.send_transaction('receiveInteger', 'YOUR_ACCOUNT_ADDRESS', 'YOUR_PRIVATE_KEY', 123)
+
+    # 发送交易
+    contract_interface.send_transaction('receiveInteger', account, private_key, 123)
+
+    # 监听事件
+    def handle_integer_received(raw_event, args):
+        print(args)
     contract_interface.listen_for_events("IntegerReceived(uint256)", handle_integer_received)
