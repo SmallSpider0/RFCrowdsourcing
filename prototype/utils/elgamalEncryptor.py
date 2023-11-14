@@ -30,6 +30,10 @@ class ElgamalEncryptor:
         with open(private_key_file, 'wb') as f:
             pickle.dump(str(sk), f)
 
+    @classmethod
+    def createCiphertext(cls, s):
+        return elgamal.ElGamal.Ciphertext.from_str(s)
+
     # 用公钥加密
     def encrypt(self, msg, alpha = None):
         if self.pk is None:
@@ -51,37 +55,36 @@ class ElgamalEncryptor:
     def genAlpha(self):
         return elgamal.ElGamal.genAlpha(self.pk.p)
 
-    # 重加密交互式证明的模拟器    
-    def proveReEncrypt(self, alpha):
-        # 模拟证明过程的3次通信
-        # 证明者知道e, alpha，且e=E(0, alpha)，而验证者仅知道e
-        # 证明者需要在不透露alpha的情况下向验证者证明e=E(0, alpha)
-
+    # 重加密证明通信内容 1/3
+    def proveReEncrypt_1(self):
         # 1.证明者发送e'
-        alpha_prime = randrange(self.pk.p - 1)
-        e_prime = self.encrypt(0, alpha_prime)  # e' = E(0, alpha')
-        
+        alpha_tmp = randrange(self.pk.p - 1)
+        e_prime = self.encrypt(0, alpha_tmp)  # e' = E(0, alpha')
+        return e_prime, alpha_tmp
+    
+    # 重加密证明通信内容 2/3
+    def proveReEncrypt_2(self):
         # 2.验证者发送一个挑战c
         c = randrange(self.pk.p - 1)
-
-        # 3.证明者发送beta
-        beta = (c * alpha + alpha_prime) % (self.pk.p-1)  # 计算响应beta
-        
-        return e_prime, c, beta
+        return c
+    
+    # 重加密证明通信内容 3/3
+    def proveReEncrypt_3(self, c, alpha , alpha_tmp):
+        # 3.证明者基于挑战c构造并发送beta
+        beta = (c * alpha + alpha_tmp) % (self.pk.p-1)  # 计算响应beta
+        return beta
     
     # 验证重加密交互式证明模拟器的模拟结果
-    def verifyReEncrypt(self, e, e_prime, c, beta):
+    def verifyReEncrypt(self, new_ciphertext, ciphertext , e_prime, c, beta):
         # 模拟最终的验证过程
         # 检查E(0, beta)是否等于c * e * e'
         # 对于ElGamal密文，我们需要分别计算每个组件
+        e = new_ciphertext - ciphertext
         tmp = self.encrypt(0, beta)
-        
         # 计算c * e * e' 的第一部分 (对应于ElGamal密文的cm)
         e1 = (pow(e.cm, c, self.pk.p) * e_prime.cm) % self.pk.p
-
         # 计算c * e * e' 的第二部分 (对应于ElGamal密文的cr)
         e2 = (pow(e.cr, c, self.pk.p) * e_prime.cr) % self.pk.p
-
         # 现在，我们将 E(0, beta) 的两部分与上面计算的两部分进行比较
         return tmp.cm == e1 and tmp.cr == e2
 
@@ -101,6 +104,10 @@ if __name__=="__main__":
     message_space = list(range(1000))
     msg = 123
     ciphertext = encryptor.encrypt(msg)
+
+    ciphertext_file = 'tmp/ciphertext.pkl'
+    with open(ciphertext_file, 'wb') as f:
+        pickle.dump(str(ciphertext), f)
     print("Encrypted:", ciphertext)
 
     # 2.重加密（需要实现re_encrypt方法）
@@ -115,6 +122,8 @@ if __name__=="__main__":
     print("Decrypted_re:", decrypted_arr_re)
 
     # 4.重加密证明
-    e_prime, c, beta = encryptor.proveReEncrypt(alpha_prime)
-    valid = encryptor.verifyReEncrypt(new_ciphertext - ciphertext, e_prime, c, beta)
+    e_prime, alpha_tmp = encryptor.proveReEncrypt_1() # 证明者发送e_prime，并保存alpha_tmp
+    c = encryptor.proveReEncrypt_2() # 验证者发送一个挑战c
+    beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp) # 证明者发送beta
+    valid = encryptor.verifyReEncrypt(new_ciphertext, ciphertext, e_prime, c, beta) # 验证者验证上述交互内容，判断重加密是否正确
     print(f"Reencryption Proof Valid: {valid}")
