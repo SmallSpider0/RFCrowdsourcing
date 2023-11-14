@@ -10,7 +10,7 @@ Submitter 仅需保存Requester的公钥;
 """
 
 # TODO：完成randomizer模块的零知识证明生成
-# TODO：完成randomizer模块的完成流程，包括从IPFS获取数据和将承诺上传区块链
+# TODO：完成randomizer模块的完整流程，包括从IPFS获取数据和将承诺上传区块链
 
 from prototype import ipfshttpclient
 

@@ -27,13 +27,11 @@ class Randomizer:
 
     def perform_reencryption(self, ciphertext):
         # 使用elgamal_encryptor对ciphertext进行重加密
-        # 并生成NIZKP（您将实现该逻辑）
         reencrypted_ciphertext = self.elgamal_encryptor.re_encrypt(ciphertext)
-        nizkp = self.elgamal_encryptor.generate_nizkp()
-        return reencrypted_ciphertext, nizkp
+        return reencrypted_ciphertext
 
     def upload_results(self, reencrypted_ciphertext, nizkp):
-        # 将重加密结果和NIZKP上传到分布式数据库
+        # 将重加密结果上传到分布式数据库
         # 获取新的文件指针并计算承诺，上传到区块链
         # 您需要根据您的分布式文件存储和区块链系统实现此逻辑
         pass
