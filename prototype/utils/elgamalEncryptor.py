@@ -12,22 +12,21 @@ class ElgamalEncryptor:
         self.pk = None
         self.sk = None
         if public_key_file:
-            with open(public_key_file, 'rb') as f:
+            with open(public_key_file, "rb") as f:
                 tmp = pickle.load(f)
             self.pk = elgamal.ElGamal.PublicKey.from_str(tmp)
         if private_key_file:
-            with open(private_key_file, 'rb') as f:
+            with open(private_key_file, "rb") as f:
                 tmp = pickle.load(f)
             self.sk = elgamal.ElGamal.PrivateKey.from_str(tmp)
-        
 
     # 生成密钥对
     @classmethod
     def generateAndSaveKeys(cls, public_key_file, private_key_file, bits=256):
         pk, sk = elgamal.ElGamal.KeyGen(bits)
-        with open(public_key_file, 'wb') as f:
+        with open(public_key_file, "wb") as f:
             pickle.dump(str(pk), f)
-        with open(private_key_file, 'wb') as f:
+        with open(private_key_file, "wb") as f:
             pickle.dump(str(sk), f)
 
     @classmethod
@@ -35,7 +34,7 @@ class ElgamalEncryptor:
         return elgamal.ElGamal.Ciphertext.from_str(s)
 
     # 用公钥加密
-    def encrypt(self, msg, alpha = None):
+    def encrypt(self, msg, alpha=None):
         if self.pk is None:
             return False
         return elgamal.ElGamal.Encrypt(self.pk, msg, alpha)
@@ -47,7 +46,7 @@ class ElgamalEncryptor:
         return elgamal.ElGamal.Decrypt(self.sk, ciphertext, message_space)
 
     # 用公钥重加密
-    def reEncrypt(self, ciphertext, alpha_prime = None):
+    def reEncrypt(self, ciphertext, alpha_prime=None):
         if self.pk is None:
             return False
         return elgamal.ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime)
@@ -61,21 +60,21 @@ class ElgamalEncryptor:
         alpha_tmp = randrange(self.pk.p - 1)
         e_prime = self.encrypt(0, alpha_tmp)  # e' = E(0, alpha')
         return e_prime, alpha_tmp
-    
+
     # 重加密证明通信内容 2/3
     def proveReEncrypt_2(self):
         # 2.验证者发送一个挑战c
         c = randrange(self.pk.p - 1)
         return c
-    
+
     # 重加密证明通信内容 3/3
-    def proveReEncrypt_3(self, c, alpha , alpha_tmp):
+    def proveReEncrypt_3(self, c, alpha, alpha_tmp):
         # 3.证明者基于挑战c构造并发送beta
-        beta = (c * alpha + alpha_tmp) % (self.pk.p-1)  # 计算响应beta
+        beta = (c * alpha + alpha_tmp) % (self.pk.p - 1)  # 计算响应beta
         return beta
-    
+
     # 验证重加密交互式证明模拟器的模拟结果
-    def verifyReEncrypt(self, new_ciphertext, ciphertext , e_prime, c, beta):
+    def verifyReEncrypt(self, new_ciphertext, ciphertext, e_prime, c, beta):
         # 模拟最终的验证过程
         # 检查E(0, beta)是否等于c * e * e'
         # 对于ElGamal密文，我们需要分别计算每个组件
@@ -89,14 +88,15 @@ class ElgamalEncryptor:
         return tmp.cm == e1 and tmp.cr == e2
 
 
-if __name__=="__main__":
-
+if __name__ == "__main__":
     # 首次运行前需要生成密钥对并保存
-    ElgamalEncryptor.generateAndSaveKeys('tmp/keypairs/pk.pkl', 'tmp/keypairs/sk.pkl', 256)
+    ElgamalEncryptor.generateAndSaveKeys(
+        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256
+    )
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
-    pk_file = 'tmp/keypairs/pk.pkl'
-    sk_file = 'tmp/keypairs/sk.pkl'
+    pk_file = "tmp/keypairs/pk.pkl"
+    sk_file = "tmp/keypairs/sk.pkl"
     encryptor = ElgamalEncryptor(pk_file, sk_file)
 
     # 1.加密
@@ -105,8 +105,8 @@ if __name__=="__main__":
     msg = 123
     ciphertext = encryptor.encrypt(msg)
 
-    ciphertext_file = 'tmp/ciphertext.pkl'
-    with open(ciphertext_file, 'wb') as f:
+    ciphertext_file = "tmp/ciphertext.pkl"
+    with open(ciphertext_file, "wb") as f:
         pickle.dump(str(ciphertext), f)
     print("Encrypted:", ciphertext)
 
@@ -122,8 +122,10 @@ if __name__=="__main__":
     print("Decrypted_re:", decrypted_arr_re)
 
     # 4.重加密证明
-    e_prime, alpha_tmp = encryptor.proveReEncrypt_1() # 证明者发送e_prime，并保存alpha_tmp
-    c = encryptor.proveReEncrypt_2() # 验证者发送一个挑战c
-    beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp) # 证明者发送beta
-    valid = encryptor.verifyReEncrypt(new_ciphertext, ciphertext, e_prime, c, beta) # 验证者验证上述交互内容，判断重加密是否正确
+    e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
+    c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
+    beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
+    valid = encryptor.verifyReEncrypt(
+        new_ciphertext, ciphertext, e_prime, c, beta
+    )  # 验证者验证上述交互内容，判断重加密是否正确
     print(f"Reencryption Proof Valid: {valid}")

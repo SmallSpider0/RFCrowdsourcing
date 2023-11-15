@@ -14,18 +14,18 @@ class ElGamal:
             self.x = x
 
         def __repr__(self):
-            return f'ElGamal.PrivateKey(p={self.p}, g={self.g}, x={self.x})'
+            return f"ElGamal.PrivateKey(p={self.p}, g={self.g}, x={self.x})"
 
         def __eq__(self, pk):
             return self.p == pk.p and self.g == pk.g and self.x == pk.x
-    
+
         def __str__(self):
-            return json.dumps({'p': self.p, 'g': self.g, 'x': self.x})
+            return json.dumps({"p": self.p, "g": self.g, "x": self.x})
 
         @classmethod
         def from_str(cls, s):
             obj = json.loads(s)
-            return cls(obj['p'], obj['g'], obj['x'])
+            return cls(obj["p"], obj["g"], obj["x"])
 
     class PublicKey:
         def __init__(self, p=None, g=None, h=None):
@@ -34,24 +34,24 @@ class ElGamal:
             self.h = h
 
         def __repr__(self):
-            return f'ElGamal.PublicKey(p={self.p}, g={self.g}, h={self.h})'
+            return f"ElGamal.PublicKey(p={self.p}, g={self.g}, h={self.h})"
 
         def __eq__(self, pk):
             return self.p == pk.p and self.g == pk.g and self.h == pk.h
 
         def __str__(self):
-            return json.dumps({'p': self.p, 'g': self.g, 'h': self.h})
+            return json.dumps({"p": self.p, "g": self.g, "h": self.h})
 
         @classmethod
         def from_str(cls, s):
             obj = json.loads(s)
-            return cls(obj['p'], obj['g'], obj['h'])
+            return cls(obj["p"], obj["g"], obj["h"])
 
     class Ciphertext:
         def __init__(self, cm, cr, pk):
-            self.cm = cm # ciphertext with message
-            self.cr = cr # ciphertext with random number
-            self.pk = pk # the public key
+            self.cm = cm  # ciphertext with message
+            self.cr = cr  # ciphertext with random number
+            self.pk = pk  # the public key
 
         def __neg__(self):
             new_cm = multiplicative_inverse(self.cm, self.pk.p)
@@ -64,7 +64,7 @@ class ElGamal:
                 return ElGamal.Ciphertext(self.cm, self.cr, self.pk)
 
             # homomorphic operation
-            assert self.pk == e.pk, 'The public keys should be the same!'
+            assert self.pk == e.pk, "The public keys should be the same!"
             new_cm = self.cm * e.cm % self.pk.p
             new_cr = self.cr * e.cr % self.pk.p
             return ElGamal.Ciphertext(new_cm, new_cr, self.pk)
@@ -77,12 +77,12 @@ class ElGamal:
 
         def __rmul__(self, scalar):
             if not isinstance(scalar, int):
-                ValueError('only scalar multiplication is allowed')
+                ValueError("only scalar multiplication is allowed")
             ret = ElGamal.Encrypt(self.pk, 0, 0)
             # fast multiplication
             for b in bin(scalar)[2:]:
                 ret = ret + ret
-                if b == '1':
+                if b == "1":
                     ret += self
             return ret
 
@@ -90,17 +90,16 @@ class ElGamal:
             return self.cm == e.cm and self.cr == e.cr and self.pk == e.pk
 
         def __repr__(self):
-            return f'ElGamal.Ciphertext(cm={self.cm}, cr={self.cr}, pk={self.pk})'
+            return f"ElGamal.Ciphertext(cm={self.cm}, cr={self.cr}, pk={self.pk})"
 
         def __str__(self):
-            return json.dumps({'cm': self.cm, 'cr': self.cr, 'pk': str(self.pk)})
+            return json.dumps({"cm": self.cm, "cr": self.cr, "pk": str(self.pk)})
 
         @classmethod
         def from_str(cls, s):
             obj = json.loads(s)
-            pk = ElGamal.PublicKey.from_str(obj['pk'])
-            return cls(obj['cm'], obj['cr'], pk)
-
+            pk = ElGamal.PublicKey.from_str(obj["pk"])
+            return cls(obj["cm"], obj["cr"], pk)
 
     @classmethod
     def KeyGen(cls, nbits=512):
@@ -122,7 +121,7 @@ class ElGamal:
 
         p, g = int(p), int(g)
 
-        x = randrange(nbits+1, p)
+        x = randrange(nbits + 1, p)
         h = pow(g, x, p)
 
         return (ElGamal.PublicKey(p, g, h), ElGamal.PrivateKey(p, g, x))
@@ -141,8 +140,8 @@ class ElGamal:
         for m in message_space:
             if pow(sk.g, m, sk.p) == gm:
                 return m
-        raise ValueError('decryption failed')
-    
+        raise ValueError("decryption failed")
+
     @classmethod
     def ReEncrypt(cls, pk, ciphertext, alpha_prime=None):
         """
@@ -151,15 +150,17 @@ class ElGamal:
         # 生成一个新的随机数alpha_prime用于重加密
         if alpha_prime is None:
             alpha_prime = cls.genAlpha(pk.p)
-        
+
         # 计算重加密的两个部分
-        cm_re = pow(pk.g, 0, pk.p) * pow(pk.h, alpha_prime, pk.p) % pk.p  # E(0, alpha_prime)的第一部分
+        cm_re = (
+            pow(pk.g, 0, pk.p) * pow(pk.h, alpha_prime, pk.p) % pk.p
+        )  # E(0, alpha_prime)的第一部分
         cr_re = pow(pk.g, alpha_prime, pk.p)  # E(0, alpha_prime)的第二部分
-        
+
         # 同态相乘原密文和新密文
         new_cm = (ciphertext.cm * cm_re) % pk.p
         new_cr = (ciphertext.cr * cr_re) % pk.p
-        
+
         # 返回新的重加密后的密文
         return ElGamal.Ciphertext(new_cm, new_cr, pk)
 
@@ -173,21 +174,27 @@ def __test():
     from random import choice
 
     for round_ in range(10):
-        print(f'test round {round_} ... ', end='', flush=True)
+        print(f"test round {round_} ... ", end="", flush=True)
         nbits = 256
         pk, sk = ElGamal.KeyGen(nbits)
 
         # test decrypt
         m = choice(message_space)
-        assert ElGamal.Decrypt(sk, ElGamal.Encrypt(pk, m), message_space) == m, f'test decryption failed\n{pk}\n{sk}\n{m=}'
+        assert (
+            ElGamal.Decrypt(sk, ElGamal.Encrypt(pk, m), message_space) == m
+        ), f"test decryption failed\n{pk}\n{sk}\n{m=}"
 
         # test public key from str
-        assert pk == ElGamal.PublicKey.from_str(str(pk)), f'test public key from str failed\n{pk=}'
+        assert pk == ElGamal.PublicKey.from_str(
+            str(pk)
+        ), f"test public key from str failed\n{pk=}"
 
         # test cipher text from str
         m = choice(message_space)
         c = ElGamal.Encrypt(pk, m)
-        assert c == ElGamal.Ciphertext.from_str(str(c)), f'test public key from str failed\n{(pk, m, c)=}'
+        assert c == ElGamal.Ciphertext.from_str(
+            str(c)
+        ), f"test public key from str failed\n{(pk, m, c)=}"
 
         # test homomorphic sub
         while True:
@@ -199,10 +206,12 @@ def __test():
         alpha2 = randrange(pk.p - 1)
         c1 = ElGamal.Encrypt(pk, m1, alpha1)
         c2 = ElGamal.Encrypt(pk, m2, alpha2)
-        assert ElGamal.Decrypt(sk, c1 - c2, message_space) == m1 - m2, f'test homomorphic add failed\n{sk}\n{m1=}\n{m2=}\n{alpha1=}\n{alpha2}'
+        assert (
+            ElGamal.Decrypt(sk, c1 - c2, message_space) == m1 - m2
+        ), f"test homomorphic add failed\n{sk}\n{m1=}\n{m2=}\n{alpha1=}\n{alpha2}"
 
-        print('ok.')
+        print("ok.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     __test()
