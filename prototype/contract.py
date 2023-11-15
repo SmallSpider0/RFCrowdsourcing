@@ -91,6 +91,8 @@ class ContractInterface:
                     indexed_values = event_topics[1:]
 
                     # 解码非索引参数
+                    if type(event_data)==str:
+                        event_data = event_data.encode()
                     non_indexed_values_bytes = bytes(event_data)
                     non_indexed_decoded = list(
                         decode(non_indexed_types, non_indexed_values_bytes)
@@ -127,9 +129,6 @@ if __name__ == "__main__":
         contract_abi = json.loads(file.read())  # 智能合约ABI
     contract_interface = ContractInterface(provider_url, contract_address, contract_abi)
 
-    # 发送交易
-    contract_interface.send_transaction("receiveInteger", account, private_key, 123)
-
     # 监听事件
     def handle_integer_received(raw_event, args):
         print(args)
@@ -141,3 +140,6 @@ if __name__ == "__main__":
     # 使用异步模式监听事件时 主程序可以运行其它代码
     for _ in range(10):
         time.sleep(1)
+
+    # 发送交易
+    contract_interface.send_transaction("receiveInteger", account, private_key, 123)

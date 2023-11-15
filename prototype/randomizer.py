@@ -1,17 +1,11 @@
-from web3 import Web3
-from contract import ContractInterface
-from utils.elgamalEncryptor import ElgamalEncryptor
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
 import pickle
-
-try:
-    from . import ipfshttpclient  # 尝试相对导入
-except ImportError:
-    import ipfshttpclient  # 回退到绝对导入
+from utils.network import listen_on_port, connect_to, sendLine, recvLine
+from base_node import BaseNode
+import threading
 
 
 # TODO：需要实现重加密证明的交互式验证（与requester交互）参考论文开源项目 实现多轮交互
-class Randomizer:
+class Randomizer(BaseNode):
     def __init__(
         self,
         ipfs_url,
@@ -19,49 +13,52 @@ class Randomizer:
         contract_address,
         contract_abi,
         requester_pk_file,
-        requester_ip,
-        requester_port,
+        proving_server_port,
         id=0,
     ):
         # 其它参数初始化
-        self.requester_ip = requester_ip
-        self.requester_port = requester_port
+        self.proving_server_port = proving_server_port
         self.id = id
+        self.old_alpha_primes = {}
 
-        # 初始化区块链交互模块
-        self.web3 = Web3(Web3.HTTPProvider(web3_url))
-        self.contract_interface = ContractInterface(
-            provider_url, contract_address, contract_abi
+        # 基类初始化
+        super().__init__(
+            ipfs_url, provider_url, contract_address, contract_abi, requester_pk_file
         )
 
-        # 初始化密码学模块
-        self.encryptor = ElgamalEncryptor(public_key_file=requester_pk_file)
-
-        # 初始化IPFS交互模块
-        self.ipfs_client = ipfshttpclient.connect(ipfs_url)
-
-    def listen_for_requests(self, is_async=False):
-        # IntegerReceived(uint256)仅作测试用
+    def daemon_start(self):
+        # 1.启动事件监听器
+        # TODO:智能合约完成后 修改为监听正确的事件
         self.contract_interface.listen_for_events(
-            "IntegerReceived(uint256)", self.__handle_event, is_async
+            "IntegerReceived(uint256)", self.__handle_event, True
         )
 
-    def prove(self, alpha_prime):
+        # 2.启动重加密ZKP验证服务
+        threading.Thread(
+            target=listen_on_port,
+            args=(self.__proving_server, self.proving_server_port),
+        ).start()
+
+    # 接收Requester的请求：重加密结果的唯一id（例如区块链上的哈希），要求证明有效性
+    # Randomizer应该在重加密后保存相关结果用于提供证明
+    def __proving_server(self, conn, addr):
         # 与Requester交互式验证重加密ZKP
         # 证明ciphertext使用alpha_prime重加密得到new_ciphertext
-        def handler(conn):
-            # 1.证明者发送e_prime，并保存alpha_tmp
-            e_prime, alpha_tmp = self.encryptor.proveReEncrypt_1()
-            sendLine(conn, str(e_prime))
-            # 2.接收验证者发送的挑战c，并构造和发送beta
-            c = recvLine(conn)
-            beta = self.encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)
-            sendLine(conn, str(beta))
-            # 3.接收验证结果（是否通过）
-            ret = recvLine(conn)
-            return ret
 
-        return connect_to(handler, self.requester_port, self.requester_ip)
+        # 0.证明者接收验证请求，并从本地获取验证所需的信息
+        commit = recvLine(conn)
+        alpha_prime = self.old_alpha_primes[commit]
+
+        # 1.证明者发送e_prime，并保存alpha_tmp
+        e_prime, alpha_tmp = self.encryptor.proveReEncrypt_1()
+        sendLine(conn, e_prime)
+
+        # 2.接收验证者发送的挑战c，并构造和发送beta
+        c = recvLine(conn)
+        beta = self.encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)
+        sendLine(conn, beta)
+
+        print('successed handled:', commit)
 
     def __handle_event(self, raw_event, args):
         # 1.监听event，等待前一顺位的Randomizers提交重加密结果
@@ -71,36 +68,27 @@ class Randomizer:
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
         # TODO：修改为从event的参数中获取文件指针
         file = pickle.loads(
-            self.__fetch_ipfs("QmR7sAkVj6SVPL7dzCUU5bJZbPRNB18WWwK1yuDsTGFKha")
+            self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
         )
         ciphertext = self.encryptor.createCiphertext(file)
 
         # 3.进行重加密
-        alpha_prime = self.encryptor.genAlpha()
+        # TODO:测试完成后改回随机生成
+        # alpha_prime = self.encryptor.genAlpha()
+        alpha_prime = 2333
         new_ciphertext = self.encryptor.reEncrypt(ciphertext, alpha_prime)
 
         # 4.提交重加密结果
-        file_hash = self.__submit_ipfs(pickle.dumps(new_ciphertext))
+        file_hash = self.submit_ipfs(pickle.dumps(str(new_ciphertext)))
         print(file_hash)
 
         # 5.将重加密结果的承诺和文件指针上传至区块链
         # TODO：实现该逻辑
 
-    def __fetch_ipfs(self, file_pointer):
-        # 从分布式文件存储服务获取文件
-        download_path = "tmp/IPFS_downloads"
-        self.ipfs_client.get(file_pointer, download_path)
-        with open(f"{download_path}/{file_pointer}", "rb") as f:
-            file_content = f.read()
-        return file_content
-
-    def __submit_ipfs(self, binary_content):
-        # 向分布式文件存储服务上传文件
-        tmp_file = f"tmp/{self.id}-ipfs_tmp"
-        with open(tmp_file, "wb") as f:
-            f.write(binary_content)
-        file_hash = self.ipfs_client.add(tmp_file)["Hash"]
-        return file_hash
+        # 6.在本地保存一份结果 用于后续验证
+        commit = self._generate_commitment(new_ciphertext)
+        self.old_alpha_primes[commit] = alpha_prime
+        print(commit)
 
 
 if __name__ == "__main__":
@@ -117,19 +105,18 @@ if __name__ == "__main__":
 
     # randomizer对象初始化
     randomizer = Randomizer(
-        ipfs_url, web3_url, contract_address, contract_abi, "tmp/keypairs/pk.pkl"
+        ipfs_url, web3_url, contract_address, contract_abi, "tmp/keypairs/pk.pkl", 10000
     )
 
-    # 启动异步监听
-    randomizer.listen_for_requests(True)
+    # 启动守护程序
+    randomizer.daemon_start()
 
     # 模拟前一顺位的Randomizers提交重加密结果
-    account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
-    private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
-    randomizer.contract_interface.send_transaction(
-        "receiveInteger", account, private_key, 123
-    )
+    # account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
+    # private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
+    # randomizer.contract_interface.send_transaction(
+    #     "receiveInteger", account, private_key, 123
+    # )
 
     # 异步监听时可以做其他事
-    for _ in range(3):
-        time.sleep(1)
+    time.sleep(1000000)

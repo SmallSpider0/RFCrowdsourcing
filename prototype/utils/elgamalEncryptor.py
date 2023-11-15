@@ -68,7 +68,7 @@ class ElgamalEncryptor:
         return c
 
     # 重加密证明通信内容 3/3
-    def proveReEncrypt_3(self, c, alpha, alpha_tmp):
+    def proveReEncrypt_3(self, c, alpha, alpha_tmp)->int:
         # 3.证明者基于挑战c构造并发送beta
         beta = (c * alpha + alpha_tmp) % (self.pk.p - 1)  # 计算响应beta
         return beta

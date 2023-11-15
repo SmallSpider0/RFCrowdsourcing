@@ -1,6 +1,6 @@
 import socket
 import threading
-
+import pickle  # 导入pickle模块
 
 def recvUntil(s, suffix):
     suffix = suffix.encode() if isinstance(suffix, str) else suffix
@@ -12,15 +12,23 @@ def recvUntil(s, suffix):
             break
     return ret
 
-
 def recvLine(s):
-    return recvUntil(s, "\n")
+    line = recvUntil(s, "\n")
+    try:
+        # 反序列化数据
+        return pickle.loads(line[:-1])  # 移除行尾的换行符
+    except pickle.UnpicklingError:
+        # 如果反序列化失败，返回原始字节数据
+        return line
 
-
-def sendLine(s, buf):
-    buf = buf.encode() if isinstance(buf, str) else buf
-    return s.sendall(buf + b"\n")
-
+def sendLine(s, data):
+    try:
+        # 尝试序列化数据
+        serialized_data = pickle.dumps(data)
+    except TypeError:
+        # 如果无法序列化，则假定数据已经是字节类型
+        serialized_data = data
+    s.sendall(serialized_data + b"\n")  # 发送序列化后的数据
 
 def listen_on_port(handler, port):
     with socket.create_server(("", port)) as sock:
@@ -34,11 +42,11 @@ def listen_on_port(handler, port):
                 ),
             ).start()
 
-
 def connect_to(handler, port, ip="localhost"):
     with socket.create_connection((ip, port)) as sock:
         ret = handler(sock)
     return ret
+
 
 
 if __name__ == "__main__":
@@ -59,8 +67,8 @@ if __name__ == "__main__":
 
     # 客户端发送请求
     def handler(conn):
-        sendLine(conn, str("哈哈").encode())  # 发送数据到服务器
+        sendLine(conn, "aa")  # 发送数据到服务器
         from_server = recvLine(conn)  # 接收服务器返回的数据
-        return from_server.decode()
+        return from_server
 
     print(connect_to(handler, PORT))
