@@ -1,0 +1,9 @@
+app:
+  # 【日志记录类型】：server、file、console
+  logtype: console
+  # 【日志文件的路径】：logtype为file时生效
+  logpath:
+  # 【日志服务器】：用服务器收集各节点的日志（暂未实现）
+  logserver: 127.0.0.1:1234
+  # 【日志级别】：debug、info、error
+  loglevel: debug

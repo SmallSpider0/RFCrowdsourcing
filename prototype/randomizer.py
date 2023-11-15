@@ -3,6 +3,11 @@ from utils.network import listen_on_port, connect_to, sendLine, recvLine
 from base_node import BaseNode
 import threading
 
+try:
+    from .utils import log  # 尝试相对导入
+except ImportError:
+    from utils import log # 回退到绝对导入
+
 
 # TODO：需要实现重加密证明的交互式验证（与requester交互）参考论文开源项目 实现多轮交互
 class Randomizer(BaseNode):
@@ -58,11 +63,11 @@ class Randomizer(BaseNode):
         beta = self.encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)
         sendLine(conn, beta)
 
-        print('successed handled:', commit)
+        log.debug(f"【Randomizer】successed verified ZKP: {commit}")
 
     def __handle_event(self, raw_event, args):
         # 1.监听event，等待前一顺位的Randomizers提交重加密结果
-        print(args)
+        log.debug(f"【Randomizer】 event args {args}")
         # TODO：实现等待的逻辑
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
@@ -80,7 +85,7 @@ class Randomizer(BaseNode):
 
         # 4.提交重加密结果
         file_hash = self.submit_ipfs(pickle.dumps(str(new_ciphertext)))
-        print(file_hash)
+        log.debug(f"【Randomizer】event handler new_ciphertext file_hash: {file_hash}")
 
         # 5.将重加密结果的承诺和文件指针上传至区块链
         # TODO：实现该逻辑
@@ -88,7 +93,7 @@ class Randomizer(BaseNode):
         # 6.在本地保存一份结果 用于后续验证
         commit = self._generate_commitment(new_ciphertext)
         self.old_alpha_primes[commit] = alpha_prime
-        print(commit)
+        log.debug(f"【Randomizer】event handler new_ciphertext commit: {commit}")
 
 
 if __name__ == "__main__":

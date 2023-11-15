@@ -2,6 +2,10 @@ from utils.network import listen_on_port, connect_to, sendLine, recvLine
 import threading
 from base_node import BaseNode
 
+try:
+    from .utils import log  # 尝试相对导入
+except ImportError:
+    from utils import log # 回退到绝对导入
 
 class Requester(BaseNode):
     # 构造函数
@@ -51,7 +55,7 @@ class Requester(BaseNode):
     def __handle_event(self, raw_event, args):
         # 1.监听event，等待最后顺位的Randomizers提交重加密结果
         # TODO：实现
-        print(args)
+        log.debug(f"【Requester】event args {args}")
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载重加密结果
         # TODO：改成从智能合约和IPFS获取
@@ -79,7 +83,7 @@ class Requester(BaseNode):
                 item["address"], item["ciphertext"], item["new_ciphertext"]
             )
             rets.append(valid)
-        print(rets)
+        log.debug(f"【Requester】event rets {rets}")
 
         # 4.调用__answer_collection解密重加密结果并保存
         # TODO：实现
