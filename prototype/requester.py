@@ -68,7 +68,7 @@ class Requester(BaseNode):
         # 生成一个新的task 并返回
         # 如果没有新的subtask了则返回None
         subtask = self.task.get_subtasks()
-        sendLine(conn, subtask)
+        sendLine(conn, str(subtask)) # 将任务序列化后发送
 
     def __handle_event(self, raw_event, args):
         # 1.监听event，等待最后顺位的Randomizers提交重加密结果
@@ -77,11 +77,11 @@ class Requester(BaseNode):
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载重加密结果
         # TODO：改成从智能合约和IPFS获取
-        randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-        ciphertext = randomizer.encryptor.createCiphertext(file)
+        file = self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
+        ciphertext = self.encryptor.createCiphertext(file)
 
-        randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
-        ciphertext_new = randomizer.encryptor.createCiphertext(file)
+        file = self.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
+        ciphertext_new = self.encryptor.createCiphertext(file)
         data = [
             {
                 "address": "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",
@@ -161,10 +161,10 @@ if __name__ == "__main__":
 
     TASK_PULL_PORT = 11111
     from task.simple_task import SimpleTask
-    task = SimpleTask('This is a simple task', list(range(100)),5)
+    task = SimpleTask('This is a simple task', list(range(100)),10)
 
     # requester对象初始化
-    randomizer = Requester(
+    requester = Requester(
         ipfs_url,
         web3_url,
         contract_address,
@@ -175,16 +175,16 @@ if __name__ == "__main__":
         task,
         TASK_PULL_PORT
     )
-    # randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-    # ciphertext = randomizer.encryptor.createCiphertext(file)
+    file = requester.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
+    ciphertext = requester.encryptor.createCiphertext(file)
 
-    # randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
-    # ciphertext_new = randomizer.encryptor.createCiphertext(file)
+    file = requester.fetch_ipfs("QmS7yQ99Tdr3wZLfYjuBtwY6autHG21Lbcjmktuv4VGoCE")
+    ciphertext_new = requester.encryptor.createCiphertext(file)
 
-    # print(randomizer.verify_re_encryption("0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",ciphertext,ciphertext_new))
+    print(requester.verify_re_encryption("0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",ciphertext,ciphertext_new))
 
     # 启动异步监听
-    randomizer.daemon_start()
+    requester.daemon_start()
 
     # 模拟前一顺位的Randomizers提交重加密结果
     # account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"

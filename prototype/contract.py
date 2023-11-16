@@ -31,6 +31,15 @@ class ContractInterface:
         signed_txn = self.web3.eth.account.sign_transaction(txn, private_key)
         txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
         return txn_hash
+    
+    def call_function(self, function_name: str, *args, **kwargs):
+        """
+        Call a read-only function from the contract and return its result.
+        """
+        func = getattr(self.contract.functions, function_name)(*args, **kwargs)
+        result = func.call()
+        # 结果根据ABI自动解析为相应的Python数据类型
+        return result
 
     def log_loop(self, event_filter, event_handler, poll_interval):
         while True:
@@ -138,9 +147,12 @@ if __name__ == "__main__":
         "IntegerReceived(uint256)", handle_integer_received, is_async=True
     )
 
+    # 发送交易
+    contract_interface.send_transaction("receiveInteger", account, private_key, 123)
+
+    lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
+    print(lastReceivedInteger)
+
     # 使用异步模式监听事件时 主程序可以运行其它代码
     for _ in range(10):
         time.sleep(1)
-
-    # 发送交易
-    contract_interface.send_transaction("receiveInteger", account, private_key, 123)

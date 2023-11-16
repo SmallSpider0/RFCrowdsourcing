@@ -77,7 +77,7 @@ class Randomizer(BaseNode):
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
         # TODO：修改为从event的参数中获取文件指针
-        file = self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
+        file = self.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
         ciphertext = self.encryptor.createCiphertext(file)
 
         # 3.进行重加密
@@ -120,12 +120,12 @@ if __name__ == "__main__":
     # 启动守护程序
     randomizer.daemon_start()
 
-    # 模拟前一顺位的Randomizers提交重加密结果
-    # account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
-    # private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
-    # randomizer.contract_interface.send_transaction(
-    #     "receiveInteger", account, private_key, 123
-    # )
+    # 模拟触发event
+    account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
+    private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
+    randomizer.contract_interface.send_transaction(
+        "receiveInteger", account, private_key, 123
+    )
 
     # 异步监听时可以做其他事
     time.sleep(1000000)
