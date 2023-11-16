@@ -1,11 +1,19 @@
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
-import threading
-from base_node import BaseNode
+# 添加当前路径至解释器，确保单元测试时可正常import其它文件
+import os
+import sys
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
-try:
-    from .utils import log  # 尝试相对导入
-except ImportError:
-    from utils import log # 回退到绝对导入
+# 基于顶层包的import
+from utils.network import listen_on_port, connect_to, sendLine, recvLine
+from base_node import BaseNode
+from task.task_interface import TaskInterface
+from utils import log
+
+# 系统库
+import threading
+
 
 class Requester(BaseNode):
     # 构造函数
@@ -18,9 +26,13 @@ class Requester(BaseNode):
         requester_pk_file,
         requester_sk_file,
         randomizer_list,
+        task: TaskInterface,
+        task_pull_serving_port,
     ):
         # 其它参数初始化
         self.randomizer_list = randomizer_list
+        self.task_pull_serving_port = task_pull_serving_port
+        self.task = task
 
         # 基类初始化
         super().__init__(
@@ -40,17 +52,23 @@ class Requester(BaseNode):
             "IntegerReceived(uint256)", self.__handle_event, True
         )
 
+        # 2.启动任务获取服务
+        threading.Thread(
+            target=listen_on_port,
+            args=(self.__task_pull_server, self.task_pull_serving_port),
+        ).start()
+
         # 2.启动奖励发放器，执行随机延迟的奖励发放
 
         # 3.启动重加密ZKP验证服务
         # TODO:修改为请求Randomizers验证
         # return connect_to(handler, self.requester_port, self.requester_ip)
 
-    def listen_for_requests(self, is_async=False):
-        # IntegerReceived(uint256)仅作测试用
-        self.contract_interface.listen_for_events(
-            "IntegerReceived(uint256)", self.__handle_event, is_async
-        )
+    def __task_pull_server(self, conn, addr):
+        # 生成一个新的task 并返回
+        # 如果没有新的subtask了则返回None
+        subtask = self.task.get_subtasks()
+        sendLine(conn, subtask)
 
     def __handle_event(self, raw_event, args):
         # 1.监听event，等待最后顺位的Randomizers提交重加密结果
@@ -59,14 +77,10 @@ class Requester(BaseNode):
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载重加密结果
         # TODO：改成从智能合约和IPFS获取
-        file = pickle.loads(
-            randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-        )
+        randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
         ciphertext = randomizer.encryptor.createCiphertext(file)
 
-        file = pickle.loads(
-            randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
-        )
+        randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
         ciphertext_new = randomizer.encryptor.createCiphertext(file)
         data = [
             {
@@ -89,7 +103,7 @@ class Requester(BaseNode):
         # TODO：实现
         # self.__answer_collection()
 
-    # TODO:思考如何获取密文和重加密结果
+    # TODO:思考什么时候调用它
     def verify_re_encryption(self, randomizer_addr, ciphertext, new_ciphertext):
         commit = self._generate_commitment(new_ciphertext)
 
@@ -133,7 +147,6 @@ if __name__ == "__main__":
     # 导入测试所需的包
     import json
     import time
-    import pickle
 
     # 测试参数定义
     ipfs_url = "/ip4/127.0.0.1/tcp/5001"
@@ -146,6 +159,10 @@ if __name__ == "__main__":
         "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4": (10000, "localhost")
     }
 
+    TASK_PULL_PORT = 11111
+    from task.simple_task import SimpleTask
+    task = SimpleTask('This is a simple task', list(range(100)),5)
+
     # requester对象初始化
     randomizer = Requester(
         ipfs_url,
@@ -155,28 +172,26 @@ if __name__ == "__main__":
         "tmp/keypairs/pk.pkl",
         "tmp/keypairs/sk.pkl",
         randomizer_list,
+        task,
+        TASK_PULL_PORT
     )
-    # file = pickle.loads(
-    #     randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-    # )
+    # randomizer.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
     # ciphertext = randomizer.encryptor.createCiphertext(file)
 
-    # file = pickle.loads(
-    #     randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
-    # )
+    # randomizer.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
     # ciphertext_new = randomizer.encryptor.createCiphertext(file)
 
     # print(randomizer.verify_re_encryption("0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",ciphertext,ciphertext_new))
 
     # 启动异步监听
-    randomizer.listen_for_requests(True)
+    randomizer.daemon_start()
 
     # 模拟前一顺位的Randomizers提交重加密结果
-    account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
-    private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
-    randomizer.contract_interface.send_transaction(
-        "receiveInteger", account, private_key, 123
-    )
+    # account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
+    # private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
+    # randomizer.contract_interface.send_transaction(
+    #     "receiveInteger", account, private_key, 123
+    # )
 
     # 异步监听时可以做其他事
     time.sleep(1000000)

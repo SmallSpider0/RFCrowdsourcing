@@ -1,14 +1,21 @@
+# 添加当前路径至解释器，确保单元测试时可正常import其它文件
+import os
+import sys
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+# 基于顶层包的import
+from contract import ContractInterface
+from utils.elgamal_encryptor import ElgamalEncryptor
+import ipfshttpclient
+
+# 系统库
 import uuid
 import os
 import hashlib
-from web3 import Web3
-from contract import ContractInterface
-from utils.elgamalEncryptor import ElgamalEncryptor
+import pickle
 
-try:
-    from . import ipfshttpclient  # 尝试相对导入
-except ImportError:
-    import ipfshttpclient  # 回退到绝对导入
 
 # 节点的基类（Requester、Randomizer、Submitter）
 class BaseNode:
@@ -38,14 +45,14 @@ class BaseNode:
         self.ipfs_client.get(file_pointer, download_path)
         with open(f"{download_path}/{file_pointer}", "rb") as f:
             file_content = f.read()
-        return file_content
+        return pickle.loads(file_content)
 
-    def submit_ipfs(self, binary_content):
-        # 向分布式文件存储服务上传文件
+    def submit_ipfs(self, object):
+        # 向分布式文件存储服务上传python对象
         uuid.uuid1()
         tmp_file = f"tmp/{uuid.uuid1()}"
         with open(tmp_file, "wb") as f:
-            f.write(binary_content)
+            f.write(pickle.dumps(object))
         file_hash = self.ipfs_client.add(tmp_file)["Hash"]
         # 删除临时文件
         if os.path.exists(tmp_file):

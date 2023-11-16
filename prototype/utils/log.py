@@ -1,13 +1,19 @@
+# 添加当前路径至解释器，确保单元测试时可正常import其它文件
+import os
+import sys
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+# 基于顶层包的import
+from utils.config import Config  # 回退到绝对导入
+
+# 系统库
 import logging
 import os
 import threading
 from collections import deque
 from logging.handlers import RotatingFileHandler
-
-try:
-    from .config import Config  # 尝试相对导入
-except ImportError:
-    from config import Config  # 回退到绝对导入
 
 logging.getLogger('SmallSpider').setLevel(logging.ERROR)
 lock = threading.Lock()

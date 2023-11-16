@@ -1,7 +1,14 @@
-try:
-    from . import elgamal  # 尝试相对导入
-except ImportError:
-    import elgamal  # 回退到绝对导入
+# 添加当前路径至解释器，确保单元测试时可正常import其它文件
+import os
+import sys
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
+
+# 基于顶层包的import
+from utils.elgamal import ElGamal
+
+# 系统库
 import pickle
 from Crypto.Random.random import randrange
 
@@ -14,16 +21,16 @@ class ElgamalEncryptor:
         if public_key_file:
             with open(public_key_file, "rb") as f:
                 tmp = pickle.load(f)
-            self.pk = elgamal.ElGamal.PublicKey.from_str(tmp)
+            self.pk = ElGamal.PublicKey.from_str(tmp)
         if private_key_file:
             with open(private_key_file, "rb") as f:
                 tmp = pickle.load(f)
-            self.sk = elgamal.ElGamal.PrivateKey.from_str(tmp)
+            self.sk = ElGamal.PrivateKey.from_str(tmp)
 
     # 生成密钥对
     @classmethod
     def generateAndSaveKeys(cls, public_key_file, private_key_file, bits=256):
-        pk, sk = elgamal.ElGamal.KeyGen(bits)
+        pk, sk = ElGamal.KeyGen(bits)
         with open(public_key_file, "wb") as f:
             pickle.dump(str(pk), f)
         with open(private_key_file, "wb") as f:
@@ -31,28 +38,28 @@ class ElgamalEncryptor:
 
     @classmethod
     def createCiphertext(cls, s):
-        return elgamal.ElGamal.Ciphertext.from_str(s)
+        return ElGamal.Ciphertext.from_str(s)
 
     # 用公钥加密
     def encrypt(self, msg, alpha=None):
         if self.pk is None:
             return False
-        return elgamal.ElGamal.Encrypt(self.pk, msg, alpha)
+        return ElGamal.Encrypt(self.pk, msg, alpha)
 
     # 用私钥解密
     def decrypt(self, ciphertext, message_space):
         if self.sk is None:
             return False
-        return elgamal.ElGamal.Decrypt(self.sk, ciphertext, message_space)
+        return ElGamal.Decrypt(self.sk, ciphertext, message_space)
 
     # 用公钥重加密
     def reEncrypt(self, ciphertext, alpha_prime=None):
         if self.pk is None:
             return False
-        return elgamal.ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime)
+        return ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime)
 
     def genAlpha(self):
-        return elgamal.ElGamal.genAlpha(self.pk.p)
+        return ElGamal.genAlpha(self.pk.p)
 
     # 重加密证明通信内容 1/3
     def proveReEncrypt_1(self):

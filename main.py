@@ -1,32 +1,20 @@
-"""
-秘钥管理
+from prototype.task.simple_task import SimpleTask
 
-Randomizer 仅需保存Requester的公钥用于重加密; 
 
-Requester 需要保存自己的公私钥;
+def test_simple_task():
+    # 创建一个任务实例
+    task = SimpleTask("Example task", list(range(100)),5)
 
-Submitter 仅需保存Requester的公钥;
+    answers = []
 
-"""
-
-# TODO：完成Requester模块，并与Randomizers模块联合测试 交互式证明
-
-from prototype import ipfshttpclient
-import pickle
-
-# 连接到本地IPFS节点
-client = ipfshttpclient.connect('/ip4/127.0.0.1/tcp/5001')  # 确保这个地址和端口与你的IPFS配置匹配
-
-# 示例：上传一个文件
-file_hash = client.add('tmp/ciphertext.pkl')['Hash']  # 替换为你要上传的文件路径
-
-# 示例：下载文件
-download_path = 'tmp/IPFS_downloads'  # 设置下载文件的保存路径
-client.get(file_hash, download_path)
-
-with open(f"{download_path}/{file_hash}", 'rb') as f:
-    tmp = pickle.load(f)
-    print(tmp)
-
-# QmR7sAkVj6SVPL7dzCUU5bJZbPRNB18WWwK1yuDsTGFKha
-print(file_hash)
+    while True:
+        subtask = task.get_subtasks()
+        if subtask == None: 
+            break
+        answer = subtask.execute()
+        answers.append(answer)
+        
+    # 评估答案
+    for answer in SimpleTask.evaluation(answers):
+        print(answer)
+test_simple_task()

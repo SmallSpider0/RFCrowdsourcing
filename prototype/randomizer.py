@@ -1,12 +1,17 @@
-import pickle
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
-from base_node import BaseNode
-import threading
+# 添加当前路径至解释器，确保单元测试时可正常import其它文件
+import os
+import sys
+current_dir = os.path.dirname(__file__)
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 
-try:
-    from .utils import log  # 尝试相对导入
-except ImportError:
-    from utils import log # 回退到绝对导入
+# 基于顶层包的import
+from utils.network import listen_on_port, connect_to, sendLine, recvLine
+from prototype.base_node import BaseNode
+from utils import log
+
+# 系统库
+import threading
 
 
 # TODO：需要实现重加密证明的交互式验证（与requester交互）参考论文开源项目 实现多轮交互
@@ -72,9 +77,7 @@ class Randomizer(BaseNode):
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
         # TODO：修改为从event的参数中获取文件指针
-        file = pickle.loads(
-            self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-        )
+        file = self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
         ciphertext = self.encryptor.createCiphertext(file)
 
         # 3.进行重加密
@@ -84,7 +87,7 @@ class Randomizer(BaseNode):
         new_ciphertext = self.encryptor.reEncrypt(ciphertext, alpha_prime)
 
         # 4.提交重加密结果
-        file_hash = self.submit_ipfs(pickle.dumps(str(new_ciphertext)))
+        file_hash = self.submit_ipfs(str(new_ciphertext))
         log.debug(f"【Randomizer】event handler new_ciphertext file_hash: {file_hash}")
 
         # 5.将重加密结果的承诺和文件指针上传至区块链
@@ -108,9 +111,10 @@ if __name__ == "__main__":
     with open("solidity/contract-abi.json") as file:
         contract_abi = json.loads(file.read())  # 智能合约ABI
 
+    PORT = 10000
     # randomizer对象初始化
     randomizer = Randomizer(
-        ipfs_url, web3_url, contract_address, contract_abi, "tmp/keypairs/pk.pkl", 10000
+        ipfs_url, web3_url, contract_address, contract_abi, "tmp/keypairs/pk.pkl", PORT
     )
 
     # 启动守护程序
