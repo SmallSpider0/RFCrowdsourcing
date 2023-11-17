@@ -38,10 +38,12 @@ class Randomizer(BaseNode):
 
     def daemon_start(self):
         # 1.启动事件监听器
-        # TODO:智能合约完成后 修改为监听正确的事件
         self.contract_interface.listen_for_events(
-            "IntegerReceived(uint256)", self.__handle_event, True
+            "SubTaskAnswerSubmitted", self.__handle_event, True
         )
+        # TODO：
+        # 监听SubTaskAnswerSubmitted事件，如果发现自己被选中了，则保存该task被选中的Randomizer列表
+        # 监听SubTaskAnswerEncrypted事件，如果发现自己前一个Randomizer完成了重加密，则自己进行重加密
 
         # 2.启动重加密ZKP验证服务
         threading.Thread(
@@ -74,6 +76,7 @@ class Randomizer(BaseNode):
         # 1.监听event，等待前一顺位的Randomizers提交重加密结果
         log.debug(f"【Randomizer】 event args {args}")
         # TODO：实现等待的逻辑
+
 
         # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
         # TODO：修改为从event的参数中获取文件指针

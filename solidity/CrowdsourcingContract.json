@@ -24,6 +24,13 @@
 	},
 	{
 		"inputs": [],
+		"name": "registerRandomizer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "reset",
 		"outputs": [],
 		"stateMutability": "nonpayable",
@@ -45,6 +52,16 @@
 				"internalType": "string",
 				"name": "filehash",
 				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "vrfOutput",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "vrfProof",
+				"type": "bytes"
 			}
 		],
 		"name": "submitSubTaskAnswer",
@@ -56,12 +73,12 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "subTaskCount",
+				"name": "_subTaskCount",
 				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
-				"name": "requiredEncryptions",
+				"name": "_requiredEncryptions",
 				"type": "uint256"
 			}
 		],
@@ -119,6 +136,12 @@
 				"internalType": "string",
 				"name": "filehash",
 				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256[]",
+				"name": "selectedRandomizers",
+				"type": "uint256[]"
 			}
 		],
 		"name": "SubTaskAnswerSubmitted",
@@ -136,6 +159,25 @@
 		],
 		"name": "SubTaskEncryptionCompleted",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "subTaskId",
+				"type": "uint256"
+			}
+		],
+		"name": "getSelectedRandomizers",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
 	},
 	{
 		"inputs": [
@@ -208,19 +250,92 @@
 						"type": "tuple[]"
 					},
 					{
-						"internalType": "uint256",
-						"name": "requiredEncryptions",
-						"type": "uint256"
+						"internalType": "bool",
+						"name": "isInited",
+						"type": "bool"
 					},
 					{
 						"internalType": "bool",
 						"name": "isCompleted",
 						"type": "bool"
+					},
+					{
+						"internalType": "uint256[]",
+						"name": "selectedRandomizers",
+						"type": "uint256[]"
+					},
+					{
+						"internalType": "uint256",
+						"name": "currentRandomizerIndex",
+						"type": "uint256"
 					}
 				],
 				"internalType": "struct CrowdsourcingContract.SubTask",
 				"name": "",
 				"type": "tuple"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "randomizerCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "randomizerInfo",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isRegistered",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "requiredEncryptions",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "subTaskCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -247,14 +362,19 @@
 				"type": "string"
 			},
 			{
-				"internalType": "uint256",
-				"name": "requiredEncryptions",
-				"type": "uint256"
+				"internalType": "bool",
+				"name": "isInited",
+				"type": "bool"
 			},
 			{
 				"internalType": "bool",
 				"name": "isCompleted",
 				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "currentRandomizerIndex",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",

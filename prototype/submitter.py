@@ -26,12 +26,16 @@ class Submitter(BaseNode):
         requester_pk_file,
         requester_ip,
         requester_task_pull_port,
+        submitter_account,
+        submitter_private_key,
         subtask_cls: SubTaskInterface,
     ):
         # 初始化其它参数
         self.requester_ip = requester_ip
         self.requester_task_pull_port = requester_task_pull_port
         self.subtask_cls = subtask_cls
+        self.submitter_account = submitter_account
+        self.submitter_private_key = submitter_private_key
 
         # 基类初始化
         super().__init__(
@@ -51,11 +55,11 @@ class Submitter(BaseNode):
     # submitter的主循环
     def __main_loop(self):
         while True:
-            subtask = self.pull_task()
-            log.debug(f"【Submitter】task received: {str(subtask)}")
-            if subtask == None:
+            self.subtask = self.pull_task()
+            log.debug(f"【Submitter】task received: {str(self.subtask)}")
+            if self.subtask == None:
                 break
-            answer = subtask.execute()
+            answer = self.subtask.execute()
             log.debug(f"【Submitter】answer generated: {str(answer)}")
             self.submit_answer(answer)
 
@@ -77,13 +81,20 @@ class Submitter(BaseNode):
         answer_commit = self._generate_commitment(answer_cipher)
         # 上传区块链和IPFS
         filehash = self.submit_ipfs(str(answer_cipher))
-        self.__submit_commit(answer_commit, filehash)
-        log.debug(f"【Submitter】successed submitted answer: {filehash}")
+        submit_tx_hash = self.__submit_commit(answer_commit, filehash)
+        log.debug(f"【Submitter】successed submitted answer: {filehash, submit_tx_hash}")
 
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链
-        # TODO：实现
-        pass
+        submit_tx_hash = self.contract_interface.send_transaction(
+            "submitSubTaskAnswer",
+            self.submitter_account,
+            self.submitter_private_key,
+            self.subtask.get_id(),
+            commit,
+            filehash,
+        )
+        return submit_tx_hash.hex()
 
 
 if __name__ == "__main__":

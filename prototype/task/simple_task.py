@@ -37,7 +37,8 @@ class SimpleAnswer(AnswerInterface):
 class SimpleSubtask(SubTaskInterface):
     """子任务的内部类"""
 
-    def __init__(self, description, content):
+    def __init__(self, id, description, content):
+        self.id = id
         self.description = description
         self.content = content
 
@@ -47,13 +48,17 @@ class SimpleSubtask(SubTaskInterface):
         ret = sum(self.content)  # 这里简单的求和为例
         return SimpleAnswer(ret)
 
+    def get_id(self):
+        '''获取子任务在主任务中的唯一ID'''
+        return self.id
+
     def __str__(self):
-        return json.dumps({"description": self.description, "content": self.content})
+        return json.dumps({"id":self.id, "description": self.description, "content": self.content})
 
     @classmethod
     def from_str(cls, s):
         obj = json.loads(s)
-        return cls(obj["description"], obj["content"])
+        return cls(obj['id'], obj["description"], obj["content"])
 
 
 # 一个简单的累加任务
@@ -67,7 +72,7 @@ class SimpleTask(TaskInterface):
     def subtask_iter(self, num):
         splited_tasks = split_array(self.data, num)
         for i in range(num):
-            yield SimpleSubtask(self.description + f" - Subtask {i}", splited_tasks[i])
+            yield SimpleSubtask(i, self.description + f" - Subtask {i}", splited_tasks[i])
 
     def get_subtasks(self):
         try:

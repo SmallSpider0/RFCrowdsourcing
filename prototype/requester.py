@@ -49,7 +49,7 @@ class Requester(BaseNode):
         # 1.启动监听器，监听特定事件
         # TODO:智能合约完成后 修改为监听正确的事件
         self.contract_interface.listen_for_events(
-            "IntegerReceived(uint256)", self.__handle_event, True
+            "SubTaskEncryptionCompleted", self.__handle_event, True
         )
 
         # 2.启动任务获取服务
