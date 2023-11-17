@@ -12,8 +12,12 @@ app:
   # 【web3服务url】：HTTP接口地址
   web3_url: http://127.0.0.1:8545
 
+test:
+  account: "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
+  private_key: "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
+
 smart_contract:
   # 【合约地址】：系统中使用的合约地址（本地部署）
-  address: "0xd7357e2A30760f94971bC8Eb10f5dd0D1cFdB6Ae"
+  address: "0x2A4CA6aEbAf150d8059b9eAD8227e49719F10b7f"
   # 【合约ABI文件位置】：本地硬盘中的位置，以项目根目录为基准
-  abi_path: "solidity/contract-abi.json"
+  abi_path: "solidity/CrowdsourcingContract.json"
