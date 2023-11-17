@@ -2,14 +2,21 @@
 # TODO：评估每个角色需要智能合约进行哪些交互，并完成智能合约的开发与测试
 
 # 导入测试所需的包
+from prototype.utils.config import Config
+
+# 系统库
 import json
 
+
+config = Config()
+
 # 测试参数定义
-ipfs_url = "/ip4/127.0.0.1/tcp/5001"
-web3_url = "http://127.0.0.1:8545"
-contract_address = "0xd7357e2A30760f94971bC8Eb10f5dd0D1cFdB6Ae"
-with open("solidity/contract-abi.json") as file:
-    contract_abi = json.loads(file.read())  # 智能合约ABI
+ipfs_url = config.get_config('app').get('ipfs_url')
+web3_url = config.get_config('app').get('web3_url')
+contract_address = config.get_config('smart_contract').get('address')
+contract_abi_path = config.get_config('smart_contract').get('abi_path')
+with open(contract_abi_path) as file:
+    contract_abi = json.loads(file.read()) 
 
 # ------------------
 # 1.初始化 submitter

@@ -6,7 +6,7 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from utils.config import Config  # 回退到绝对导入
+from utils.config import Config
 
 # 系统库
 import logging

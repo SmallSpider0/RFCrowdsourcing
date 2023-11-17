@@ -81,7 +81,7 @@ class Submitter(BaseNode):
         log.debug(f"【Submitter】successed submitted answer: {filehash}")
 
     def __submit_commit(self, commit, filehash):
-        # 上传密文至区块链、
+        # 上传密文至区块链
         # TODO：实现
         pass
 

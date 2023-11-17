@@ -175,13 +175,13 @@ if __name__ == "__main__":
         task,
         TASK_PULL_PORT
     )
-    file = requester.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
-    ciphertext = requester.encryptor.createCiphertext(file)
+    # file = requester.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
+    # ciphertext = requester.encryptor.createCiphertext(file)
 
-    file = requester.fetch_ipfs("QmS7yQ99Tdr3wZLfYjuBtwY6autHG21Lbcjmktuv4VGoCE")
-    ciphertext_new = requester.encryptor.createCiphertext(file)
+    # file = requester.fetch_ipfs("QmS7yQ99Tdr3wZLfYjuBtwY6autHG21Lbcjmktuv4VGoCE")
+    # ciphertext_new = requester.encryptor.createCiphertext(file)
 
-    print(requester.verify_re_encryption("0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",ciphertext,ciphertext_new))
+    # print(requester.verify_re_encryption("0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",ciphertext,ciphertext_new))
 
     # 启动异步监听
     requester.daemon_start()

@@ -7,3 +7,13 @@ app:
   logserver: 127.0.0.1:1234
   # 【日志级别】：debug、info、error
   loglevel: debug
+  # 【IPFS服务url】：本地私有部署IPFS
+  ipfs_url: /ip4/127.0.0.1/tcp/5001
+  # 【web3服务url】：HTTP接口地址
+  web3_url: http://127.0.0.1:8545
+
+smart_contract:
+  # 【合约地址】：系统中使用的合约地址（本地部署）
+  address: "0xd7357e2A30760f94971bC8Eb10f5dd0D1cFdB6Ae"
+  # 【合约ABI文件位置】：本地硬盘中的位置，以项目根目录为基准
+  abi_path: "solidity/contract-abi.json"
