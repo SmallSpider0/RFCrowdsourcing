@@ -1,15 +1,16 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
-from base_node import BaseNode
-from task.task_interface import TaskInterface
-from utils import log
+from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
+from prototype.base_node import BaseNode
+from prototype.task.task_interface import TaskInterface
+from prototype.utils import log
 
 # 系统库
 import threading
@@ -23,6 +24,8 @@ class Requester(BaseNode):
         provider_url,
         contract_address,
         contract_abi,
+        bc_account,
+        bc_private_key,
         requester_pk_file,
         requester_sk_file,
         randomizer_list,
@@ -33,6 +36,7 @@ class Requester(BaseNode):
         self.randomizer_list = randomizer_list
         self.task_pull_serving_port = task_pull_serving_port
         self.task = task
+        self.randomizer_of_subtasks = {}
 
         # 基类初始化
         super().__init__(
@@ -40,6 +44,8 @@ class Requester(BaseNode):
             provider_url,
             contract_address,
             contract_abi,
+            bc_account,
+            bc_private_key,
             requester_pk_file,
             requester_sk_file,
         )
@@ -47,9 +53,13 @@ class Requester(BaseNode):
     # 启动守护程序
     def daemon_start(self):
         # 1.启动监听器，监听特定事件
-        # TODO:智能合约完成后 修改为监听正确的事件
+        # TODO：调用getSubTaskFinalResult收集回答（全部重加密结果 文件hash+承诺）并处理
         self.contract_interface.listen_for_events(
-            "SubTaskEncryptionCompleted", self.__handle_event, True
+            "SubTaskEncryptionCompleted", self.__handle_SubTaskEncryptionCompleted, True
+        )
+        # TODO：监听SubTaskAnswerSubmitted 启动计时器（如果超时需要惩罚Randomizer）
+        self.contract_interface.listen_for_events(
+            "SubTaskAnswerSubmitted", self.__handle_SubTaskAnswerSubmitted, True
         )
 
         # 2.启动任务获取服务
@@ -58,53 +68,69 @@ class Requester(BaseNode):
             args=(self.__task_pull_server, self.task_pull_serving_port),
         ).start()
 
-        # 2.启动奖励发放器，执行随机延迟的奖励发放
-
-        # 3.启动重加密ZKP验证服务
-        # TODO:修改为请求Randomizers验证
-        # return connect_to(handler, self.requester_port, self.requester_ip)
+        # 3.启动奖励发放器，执行随机延迟的奖励发放
+        # TODO：完成
 
     def __task_pull_server(self, conn, addr):
         # 生成一个新的task 并返回
         # 如果没有新的subtask了则返回None
         subtask = self.task.get_subtasks()
-        sendLine(conn, str(subtask)) # 将任务序列化后发送
+        sendLine(conn, str(subtask))  # 将任务序列化后发送
 
-    def __handle_event(self, raw_event, args):
-        # 1.监听event，等待最后顺位的Randomizers提交重加密结果
-        # TODO：实现
-        log.debug(f"【Requester】event args {args}")
+    def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
+        # 保存该子任务的重加密者id顺序
+        self.randomizer_of_subtasks[args["subTaskId"]] = args["selectedRandomizers"]
+        # TODO：完成
 
-        # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载重加密结果
-        # TODO：改成从智能合约和IPFS获取
-        file = self.fetch_ipfs("QmXokoNNjhwggF5gLZSX5RhQbFSKchUZfBQY6zkaLnEmnc")
-        ciphertext = self.encryptor.createCiphertext(file)
+    def __handle_SubTaskEncryptionCompleted(self, raw_event, args):
+        # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
+        results = []
+        sub_task_id = args["subTaskId"]
+        ret = self.contract_interface.call_function(
+            "getSubTaskFinalResult", sub_task_id
+        )
+        # 获取初始提交
+        results.append(
+            {"commit": ret["initialCommit"], "filehash": ret["initialFilehash"]}
+        )
+        # 获取所有重加密结果
+        for encryption_result in ret["encryptionResults"]:
+            results.append(
+                {
+                    "commit": encryption_result["commit"],
+                    "filehash": encryption_result["filehash"],
+                }
+            )
 
-        file = self.fetch_ipfs("QmQnyNdwiLzE6LAQBXcX6ZvAk9gn6tpM38rz1U4JjeowjP")
-        ciphertext_new = self.encryptor.createCiphertext(file)
-        data = [
-            {
-                "address": "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4",
-                "ciphertext": ciphertext,
-                "new_ciphertext": ciphertext_new,
-            },
-        ]
+        # 2. 从IPFS获取密文，并验证承诺
+        # TODO：异常返回值处理
+        ciphertexts = []
+        for result in results:
+            # 获取密文
+            file = self.fetch_ipfs(result["filehash"])
+            ciphertext = self.encryptor.createCiphertext(file)
+
+            # 验证承诺
+            commit = self._generate_commitment(ciphertext)
+            if commit != result["commit"]:
+                continue
+            ciphertexts.append(ciphertext)
 
         # 3.调用__verify_re_encryption验证重加密结果
-        rets = []
-        for item in data:
+        verification_results = []
+        id_order = self.randomizer_of_subtasks[args["subTaskId"]]
+        for i in range(1, len(ciphertexts)):
             valid = self.verify_re_encryption(
-                item["address"], item["ciphertext"], item["new_ciphertext"]
+                id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
             )
-            rets.append(valid)
-        log.debug(f"【Requester】event rets {rets}")
+            verification_results.append(valid)
+            log.debug(f"【Requester】event rets {verification_results}")
 
         # 4.调用__answer_collection解密重加密结果并保存
         # TODO：实现
-        # self.__answer_collection()
+        # self.__answer_collection(ciphertexts)
 
-    # TODO:思考什么时候调用它
-    def verify_re_encryption(self, randomizer_addr, ciphertext, new_ciphertext):
+    def verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
         commit = self._generate_commitment(new_ciphertext)
 
         def handler(conn):
@@ -122,7 +148,7 @@ class Requester(BaseNode):
             conn.close()
             return e_prime, c, beta
 
-        randomizer_port, randomizer_ip = self.randomizer_list[randomizer_addr]
+        randomizer_port, randomizer_ip = self.randomizer_list[randomizer_id]
         e_prime, c, beta = connect_to(handler, randomizer_port, randomizer_ip)
         valid = self.encryptor.verifyReEncrypt(
             new_ciphertext, ciphertext, e_prime, c, beta
@@ -161,7 +187,8 @@ if __name__ == "__main__":
 
     TASK_PULL_PORT = 11111
     from task.simple_task import SimpleTask
-    task = SimpleTask('This is a simple task', list(range(100)),10)
+
+    task = SimpleTask("This is a simple task", list(range(100)), 10)
 
     # requester对象初始化
     requester = Requester(
@@ -173,7 +200,7 @@ if __name__ == "__main__":
         "tmp/keypairs/sk.pkl",
         randomizer_list,
         task,
-        TASK_PULL_PORT
+        TASK_PULL_PORT,
     )
     # file = requester.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
     # ciphertext = requester.encryptor.createCiphertext(file)
@@ -190,7 +217,7 @@ if __name__ == "__main__":
     # account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
     # private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
     # randomizer.contract_interface.send_transaction(
-    #     "receiveInteger", account, private_key, 123
+    #     "receiveInteger", 123
     # )
 
     # 异步监听时可以做其他事

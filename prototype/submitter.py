@@ -1,19 +1,19 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
-
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
+from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 from prototype.base_node import BaseNode
-from utils import log
-from task.task_interface import SubTaskInterface
+from prototype.utils import log
+from prototype.task.task_interface import SubTaskInterface
 
 # 系统库
 import threading
+import random
 
 class Submitter(BaseNode):
     # 构造函数
@@ -23,19 +23,19 @@ class Submitter(BaseNode):
         provider_url,
         contract_address,
         contract_abi,
+        bc_account,
+        bc_private_key,
         requester_pk_file,
         requester_ip,
         requester_task_pull_port,
-        submitter_account,
-        submitter_private_key,
         subtask_cls: SubTaskInterface,
+        id
     ):
         # 初始化其它参数
+        self.id = id
         self.requester_ip = requester_ip
         self.requester_task_pull_port = requester_task_pull_port
         self.subtask_cls = subtask_cls
-        self.submitter_account = submitter_account
-        self.submitter_private_key = submitter_private_key
 
         # 基类初始化
         super().__init__(
@@ -43,6 +43,8 @@ class Submitter(BaseNode):
             provider_url,
             contract_address,
             contract_abi,
+            bc_account,
+            bc_private_key,
             requester_pk_file,
         )
 
@@ -86,13 +88,14 @@ class Submitter(BaseNode):
 
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链
+        # TODO：实现基于VRF的随机数生成
+        vrf_output = random.randint(1, 10000000)
         submit_tx_hash = self.contract_interface.send_transaction(
             "submitSubTaskAnswer",
-            self.submitter_account,
-            self.submitter_private_key,
             self.subtask.get_id(),
             commit,
             filehash,
+            vrf_output
         )
         return submit_tx_hash.hex()
 

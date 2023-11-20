@@ -1,14 +1,15 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from contract import ContractInterface
-from utils.elgamal_encryptor import ElgamalEncryptor
-import ipfshttpclient
+from prototype.contract_interface import ContractInterface
+from prototype.utils.elgamal_encryptor import ElgamalEncryptor
+from prototype import ipfshttpclient
 
 # 系统库
 import uuid
@@ -25,16 +26,20 @@ class BaseNode:
         provider_url,
         contract_address,
         contract_abi,
+        bc_account,
+        bc_private_key,
         requester_pk_file,
-        requester_sk_file = None,
+        requester_sk_file=None,
     ):
         # 初始化区块链交互模块
         self.contract_interface = ContractInterface(
-            provider_url, contract_address, contract_abi
+            provider_url, contract_address, contract_abi, bc_account, bc_private_key
         )
 
         # 初始化密码学模块
-        self.encryptor = ElgamalEncryptor(public_key_file=requester_pk_file, private_key_file = requester_sk_file)
+        self.encryptor = ElgamalEncryptor(
+            public_key_file=requester_pk_file, private_key_file=requester_sk_file
+        )
 
         # 初始化IPFS交互模块
         self.ipfs_client = ipfshttpclient.connect(ipfs_url)
@@ -58,12 +63,12 @@ class BaseNode:
         if os.path.exists(tmp_file):
             os.remove(tmp_file)
         return file_hash
-    
+
     # 生成数据的承诺，这里用sha256哈希作为例子
     def _generate_commitment(self, *args):
         tmp = ""
         for arg in args:
-            tmp+=str(arg)
+            tmp += str(arg)
         # 创建哈希对象
         hash_obj = hashlib.new("sha256")
         # 更新哈希对象，这里需要确保数据是字节串

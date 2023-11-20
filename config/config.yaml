@@ -45,6 +45,6 @@ test:
 
 smart_contract:
   # 【合约地址】：系统中使用的合约地址（本地部署）
-  address: "0x093Aab69d378C34e7F3B8c81117Ad118eA34C25D"
+  address: "0xBC653A8d353F7D93844e5d94BD99aC93f4Ef588B"
   # 【合约ABI文件位置】：本地硬盘中的位置，以项目根目录为基准
   abi_path: "solidity/CrowdsourcingContract.json"

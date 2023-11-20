@@ -1,383 +1,376 @@
 [
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "newCommit",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "string",
-				"name": "newFilehash",
-				"type": "string"
-			}
-		],
-		"name": "encryptSubTaskAnswer",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "registerRandomizer",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "reset",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes32",
-				"name": "commit",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "string",
-				"name": "filehash",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "vrfOutput",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "vrfProof",
-				"type": "bytes"
-			}
-		],
-		"name": "submitSubTaskAnswer",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_subTaskCount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_requiredEncryptions",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "commit",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "filehash",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "randomizer",
-				"type": "address"
-			}
-		],
-		"name": "SubTaskAnswerEncrypted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "commit",
-				"type": "bytes32"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "filehash",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256[]",
-				"name": "selectedRandomizers",
-				"type": "uint256[]"
-			}
-		],
-		"name": "SubTaskAnswerSubmitted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			}
-		],
-		"name": "SubTaskEncryptionCompleted",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			}
-		],
-		"name": "getSelectedRandomizers",
-		"outputs": [
-			{
-				"internalType": "uint256[]",
-				"name": "",
-				"type": "uint256[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			}
-		],
-		"name": "getSubTaskFinalResult",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "bytes32",
-						"name": "commit",
-						"type": "bytes32"
-					},
-					{
-						"internalType": "string",
-						"name": "filehash",
-						"type": "string"
-					}
-				],
-				"internalType": "struct CrowdsourcingContract.EncryptionResult",
-				"name": "",
-				"type": "tuple"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "subTaskId",
-				"type": "uint256"
-			}
-		],
-		"name": "getSubTaskInfo",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "bytes32",
-						"name": "initialCommit",
-						"type": "bytes32"
-					},
-					{
-						"internalType": "string",
-						"name": "initialFilehash",
-						"type": "string"
-					},
-					{
-						"components": [
-							{
-								"internalType": "bytes32",
-								"name": "commit",
-								"type": "bytes32"
-							},
-							{
-								"internalType": "string",
-								"name": "filehash",
-								"type": "string"
-							}
-						],
-						"internalType": "struct CrowdsourcingContract.EncryptionResult[]",
-						"name": "encryptionResults",
-						"type": "tuple[]"
-					},
-					{
-						"internalType": "bool",
-						"name": "isInited",
-						"type": "bool"
-					},
-					{
-						"internalType": "bool",
-						"name": "isCompleted",
-						"type": "bool"
-					},
-					{
-						"internalType": "uint256[]",
-						"name": "selectedRandomizers",
-						"type": "uint256[]"
-					},
-					{
-						"internalType": "uint256",
-						"name": "currentRandomizerIndex",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct CrowdsourcingContract.SubTask",
-				"name": "",
-				"type": "tuple"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "randomizerCount",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "randomizerInfo",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "isRegistered",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "requiredEncryptions",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "subTaskCount",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "subTasks",
-		"outputs": [
-			{
-				"internalType": "bytes32",
-				"name": "initialCommit",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "string",
-				"name": "initialFilehash",
-				"type": "string"
-			},
-			{
-				"internalType": "bool",
-				"name": "isInited",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "isCompleted",
-				"type": "bool"
-			},
-			{
-				"internalType": "uint256",
-				"name": "currentRandomizerIndex",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "_subTaskCount",
+                "type": "uint32"
+            },
+            {
+                "internalType": "uint8",
+                "name": "_requiredEncryptions",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "subTaskId",
+                "type": "uint32"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint8",
+                "name": "randomizerId",
+                "type": "uint8"
+            }
+        ],
+        "name": "SubTaskAnswerEncrypted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "subTaskId",
+                "type": "uint32"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "commit",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "filehash",
+                "type": "string"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint8[]",
+                "name": "selectedRandomizers",
+                "type": "uint8[]"
+            }
+        ],
+        "name": "SubTaskAnswerSubmitted",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint32",
+                "name": "subTaskId",
+                "type": "uint32"
+            }
+        ],
+        "name": "SubTaskEncryptionCompleted",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "subTaskId",
+                "type": "uint32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "newCommit",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "string",
+                "name": "newFilehash",
+                "type": "string"
+            }
+        ],
+        "name": "encryptSubTaskAnswer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "subTaskId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getSelectedRandomizers",
+        "outputs": [
+            {
+                "internalType": "uint8[]",
+                "name": "",
+                "type": "uint8[]"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "subTaskId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getSubTaskFinalResult",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "initialCommit",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "initialFilehash",
+                        "type": "string"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "bytes32",
+                                "name": "commit",
+                                "type": "bytes32"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "filehash",
+                                "type": "string"
+                            }
+                        ],
+                        "internalType": "struct CrowdsourcingContract.EncryptionResult[]",
+                        "name": "encryptionResults",
+                        "type": "tuple[]"
+                    }
+                ],
+                "internalType": "struct CrowdsourcingContract.SubTaskResult",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "subTaskId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getSubTaskInfo",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "bytes32",
+                        "name": "initialCommit",
+                        "type": "bytes32"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "initialFilehash",
+                        "type": "string"
+                    },
+                    {
+                        "components": [
+                            {
+                                "internalType": "bytes32",
+                                "name": "commit",
+                                "type": "bytes32"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "filehash",
+                                "type": "string"
+                            }
+                        ],
+                        "internalType": "struct CrowdsourcingContract.EncryptionResult[]",
+                        "name": "encryptionResults",
+                        "type": "tuple[]"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isInited",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "isCompleted",
+                        "type": "bool"
+                    },
+                    {
+                        "internalType": "uint8[]",
+                        "name": "selectedRandomizers",
+                        "type": "uint8[]"
+                    },
+                    {
+                        "internalType": "uint8",
+                        "name": "currentRandomizerIndex",
+                        "type": "uint8"
+                    }
+                ],
+                "internalType": "struct CrowdsourcingContract.SubTask",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "randomizerCount",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "randomizerInfo",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "id",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bool",
+                "name": "isRegistered",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "registerRandomizer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "requiredEncryptions",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "subTaskCount",
+        "outputs": [
+            {
+                "internalType": "uint32",
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "subTasks",
+        "outputs": [
+            {
+                "internalType": "bytes32",
+                "name": "initialCommit",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "string",
+                "name": "initialFilehash",
+                "type": "string"
+            },
+            {
+                "internalType": "bool",
+                "name": "isInited",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isCompleted",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint8",
+                "name": "currentRandomizerIndex",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "subTaskId",
+                "type": "uint32"
+            },
+            {
+                "internalType": "bytes32",
+                "name": "commit",
+                "type": "bytes32"
+            },
+            {
+                "internalType": "string",
+                "name": "filehash",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "vrfOutput",
+                "type": "uint256"
+            }
+        ],
+        "name": "submitSubTaskAnswer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
 ]

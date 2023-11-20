@@ -1,14 +1,16 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from utils.network import listen_on_port, connect_to, sendLine, recvLine
+from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 from prototype.base_node import BaseNode
-from utils import log
+from prototype.utils import log
+from prototype.utils.tools import find_next_element
 
 # 系统库
 import threading
@@ -22,28 +24,46 @@ class Randomizer(BaseNode):
         provider_url,
         contract_address,
         contract_abi,
+        bc_account,
+        bc_private_key,
         requester_pk_file,
         proving_server_port,
         id=0,
     ):
         # 其它参数初始化
         self.proving_server_port = proving_server_port
+        self.bc_account = bc_account
+        self.bc_private_key = bc_private_key
         self.id = id
         self.old_alpha_primes = {}
+        # 初始化用于存储事件数据的字典
+        self.event_data = {}
 
         # 基类初始化
         super().__init__(
-            ipfs_url, provider_url, contract_address, contract_abi, requester_pk_file
+            ipfs_url,
+            provider_url,
+            contract_address,
+            contract_abi,
+            bc_account,
+            bc_private_key,
+            requester_pk_file,
         )
 
     def daemon_start(self):
+        # 0.注册
+        tx_hash = self.contract_interface.send_transaction("registerRandomizer")
+        log.debug(f"【Randomizer】{self.id} registrated")
+        
         # 1.启动事件监听器
-        self.contract_interface.listen_for_events(
-            "SubTaskAnswerSubmitted", self.__handle_event, True
-        )
-        # TODO：
         # 监听SubTaskAnswerSubmitted事件，如果发现自己被选中了，则保存该task被选中的Randomizer列表
+        self.contract_interface.listen_for_events(
+            "SubTaskAnswerSubmitted", self.__handle_SubTaskAnswerSubmitted, True
+        )
         # 监听SubTaskAnswerEncrypted事件，如果发现自己前一个Randomizer完成了重加密，则自己进行重加密
+        self.contract_interface.listen_for_events(
+            "SubTaskAnswerEncrypted", self.__handle_SubTaskAnswerEncrypted, True
+        )
 
         # 2.启动重加密ZKP验证服务
         threading.Thread(
@@ -72,34 +92,56 @@ class Randomizer(BaseNode):
 
         log.debug(f"【Randomizer】successed verified ZKP: {commit}")
 
-    def __handle_event(self, raw_event, args):
-        # 1.监听event，等待前一顺位的Randomizers提交重加密结果
-        log.debug(f"【Randomizer】 event args {args}")
-        # TODO：实现等待的逻辑
+    def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
+        # 仅当自己被选中才执行后续操作
+        if self.id in args["selectedRandomizers"]:
+            event_info = {
+                "subTaskId": args["subTaskId"],
+                "commit": args["commit"],
+                "filehash": args["filehash"],
+                "selectedRandomizers": args["selectedRandomizers"],
+            }
+            # 使用subTaskId作为索引来存储事件数据
+            self.event_data[args["subTaskId"]] = event_info
+            # 如果自己是第一顺位，则进行重加密
+            if self.id == args["selectedRandomizers"][0]:
+                self.__perform_re_encryption(args["filehash"])
 
-
-        # 2.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
-        # TODO：修改为从event的参数中获取文件指针
-        file = self.fetch_ipfs("Qmc961Q9K1ThVSkemw9tSLPNZCKLhBcpT38b6RkBdF18CC")
+    def __perform_re_encryption(self, task_id, filehash):
+        # 1.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
+        file = self.fetch_ipfs(filehash)
         ciphertext = self.encryptor.createCiphertext(file)
 
-        # 3.进行重加密
-        # TODO:测试完成后改回随机生成
-        # alpha_prime = self.encryptor.genAlpha()
-        alpha_prime = 2333
+        # 2.进行重加密
+        alpha_prime = self.encryptor.genAlpha()
         new_ciphertext = self.encryptor.reEncrypt(ciphertext, alpha_prime)
 
-        # 4.提交重加密结果
+        # 3.提交重加密结果
         file_hash = self.submit_ipfs(str(new_ciphertext))
-        log.debug(f"【Randomizer】event handler new_ciphertext file_hash: {file_hash}")
+        log.debug(f"【Randomizer】successfully uploaded result to ipfs: {file_hash}")
 
-        # 5.将重加密结果的承诺和文件指针上传至区块链
-        # TODO：实现该逻辑
-
-        # 6.在本地保存一份结果 用于后续验证
+        # 4.在本地保存一份结果 用于后续验证
         commit = self._generate_commitment(new_ciphertext)
         self.old_alpha_primes[commit] = alpha_prime
-        log.debug(f"【Randomizer】event handler new_ciphertext commit: {commit}")
+
+        # 5.将重加密结果的承诺和文件指针上传至区块链
+        tx_hash = self.contract_interface.send_transaction(
+            "encryptSubTaskAnswer",
+            task_id,
+            commit,
+            file_hash,
+        )
+        log.debug(f"【Randomizer】successfully uploaded commit to blockchain: {tx_hash}")
+
+    def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
+        # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
+        if args["subTaskId"] in self.event_data:
+            event_info = self.event_data[args["subTaskId"]]
+            # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
+            if self.id == find_next_element(
+                event_info["selectedRandomizers"], args["randomizerId"]
+            ):
+                self.__perform_re_encryption(args["subTaskId"], event_info["filehash"])
 
 
 if __name__ == "__main__":
@@ -127,7 +169,7 @@ if __name__ == "__main__":
     account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
     private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
     randomizer.contract_interface.send_transaction(
-        "receiveInteger", account, private_key, 123
+        "receiveInteger", 123
     )
 
     # 异步监听时可以做其他事
