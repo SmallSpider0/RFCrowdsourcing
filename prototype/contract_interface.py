@@ -141,51 +141,19 @@ class ContractInterface:
         return result
 
     def listen_for_events(
-        self, event_signature_or_name: str, event_handler, is_async=False
+        self, event_name: str, event_handler, is_async=False
     ):
         """
         Listens for events emitted by the smart contract and handles them with the provided event_handler function.
 
-        :param event_signature_or_name: Complete event signature or event name.
+        :param event_name: Complete event name.
         :param event_handler: Function to handle the events.
         :param is_async: If True, runs the listener in a separate thread.
 
         :return: None
         """
-        # 检查是否包含括号，以确定是否为完整事件签名
-        if "(" in event_signature_or_name:
-            # 完整事件签名
-            event_signature = event_signature_or_name
-        else:
-            # 仅事件名称，需要从ABI中查找并构建签名
-            event_name = event_signature_or_name
-            event_abi = [
-                event
-                for event in self.contract.abi
-                if event.get("name") == event_name and event.get("type") == "event"
-            ]
-            if not event_abi:
-                raise ValueError(f"No event named '{event_name}' found in contract ABI")
-            if len(event_abi) > 1:
-                raise ValueError(
-                    f"Multiple events named '{event_name}' found, please specify the full signature"
-                )
-            event_signature = "{}({})".format(
-                event_name, ",".join(input["type"] for input in event_abi[0]["inputs"])
-            )
-
-        # 生成事件签名哈希
-        event_signature_hash = self.web3.keccak(text=event_signature).hex()
-
         # 创建事件过滤器
-        event_filter = self.web3.eth.filter(
-            {
-                "address": self.contract.address,
-                "topics": [event_signature_hash],
-            }
-        )
-
-        # 启动监听
+        event_filter = eval(f"self.contract.events.{event_name}.create_filter(fromBlock='0x0')")       
         if is_async:
             worker = Thread(
                 target=self.__log_loop,
@@ -208,81 +176,8 @@ class ContractInterface:
         """
         while True:
             for event in event_filter.get_new_entries():
-                event_handler(event, self.__prase_event(event))
+                event_handler(event, event['args'])
             time.sleep(poll_interval)
-
-    def __prase_event(self, event):
-        def decode_dynamic_array(encoded_data, element_type):
-            # 解析数组长度
-            array_length_hex = encoded_data[64:128]  # 数组长度字段紧跟在第一个32字节块之后
-            array_length = int(array_length_hex, 16)
-
-            # 解析数组元素
-            array_elements = []
-            data_offset = 128  # 跳过前两个32字节块
-            for i in range(array_length):
-                start = data_offset + i * 64  # 每个元素占据32字节
-                element_hex = encoded_data[start:start + 64]  # 读取整个32字节块
-                element_value = int(element_hex, 16)
-                array_elements.append(element_value)
-
-            return array_elements
-
-        """
-        Internal method to parse the raw event data into a more readable format.
-        :param event: Raw event data.
-        :return: Parsed event data.
-        """
-        event_args = {}
-        event_data = event["data"]
-        event_topics = event["topics"]
-
-        # Extract the event's signature hash
-        event_signature_hash = event_topics[0].hex()
-
-        # Find the corresponding event definition in the ABI
-        for event_abi in self.contract.abi:
-            if event_abi.get("type") == "event":
-                print(event_abi["name"])
-                event_signature = (
-                    event_abi["name"]
-                    + "("
-                    + ",".join(i["type"] for i in event_abi["inputs"])
-                    + ")"
-                )
-                if self.web3.keccak(text=event_signature).hex() == event_signature_hash:
-                    # Parse event parameters
-                    indexed_types = [input["type"] for input in event_abi["inputs"] if input["indexed"]]
-                    non_indexed_types = [input["type"] for input in event_abi["inputs"] if not input["indexed"]]
-                    names = [input["name"] for input in event_abi["inputs"]]
-                    indexed_values = event_topics[1:]
-
-                    # Decode non-indexed parameters
-                    non_indexed_values_bytes = bytes.fromhex(event_data[2:])  # Remove '0x' prefix and convert to bytes
-                    non_indexed_decoded = []
-                    for typ in non_indexed_types:
-                        if "[]" in typ:  # Check if the type is an array
-                            # Decode dynamic array
-                            array_elements = decode_dynamic_array(non_indexed_values_bytes.hex(), typ.replace("[]", ""))
-                            non_indexed_decoded.append(array_elements)
-                        else:
-                            # Decode regular type
-                            decoded_value = decode([typ], non_indexed_values_bytes)[0]
-                            non_indexed_decoded.append(decoded_value)
-
-                    # Prepare indexed parameters
-                    indexed_decoded = []
-                    for i, typ in enumerate(indexed_types):
-                        if typ == "address":
-                            indexed_decoded.append(self.web3.toChecksumAddress(indexed_values[i].hex()))
-                        elif typ == "uint256":
-                            indexed_decoded.append(int(indexed_values[i].hex(), 16))
-
-                    # Merge parameters
-                    event_args = dict(zip(names, indexed_decoded + non_indexed_decoded))
-                    break
-        return event_args  
-
 
 if __name__ == "__main__":
     # 测试参数定义
@@ -304,7 +199,7 @@ if __name__ == "__main__":
 
     # 监听事件
     def handle_integer_received(raw_event, args):
-        print(args)
+        print(args['value'])
 
     contract_interface.listen_for_events(
         "IntegerReceived", handle_integer_received, is_async=True
