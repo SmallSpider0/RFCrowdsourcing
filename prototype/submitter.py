@@ -58,17 +58,18 @@ class Submitter(BaseNode):
     def __main_loop(self):
         while True:
             self.subtask = self.pull_task()
-            log.debug(f"【Submitter】task received: {str(self.subtask)}")
+            log.debug(f"【Submitter】{self.id} task received: {str(self.subtask)}")
             if self.subtask == None:
                 break
             answer = self.subtask.execute()
-            log.debug(f"【Submitter】answer generated: {str(answer)}")
+            log.debug(f"【Submitter】{self.id} answer generated: {str(answer)}")
             self.submit_answer(answer)
 
     # 从requester拉取众包任务
     def pull_task(self):
         def handler(conn):
             subtask_str = recvLine(conn)
+            conn.close()
             return subtask_str
         subtask_str = connect_to(handler, self.requester_task_pull_port, self.requester_ip)
         if subtask_str == "None":
@@ -84,7 +85,7 @@ class Submitter(BaseNode):
         # 上传区块链和IPFS
         filehash = self.submit_ipfs(str(answer_cipher))
         submit_tx_hash = self.__submit_commit(answer_commit, filehash)
-        log.debug(f"【Submitter】successed submitted answer: {filehash, submit_tx_hash}")
+        log.debug(f"【Submitter】{self.id} successed submitted answer: {filehash, submit_tx_hash}")
 
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链

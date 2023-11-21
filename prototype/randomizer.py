@@ -16,7 +16,6 @@ from prototype.utils.tools import find_next_element
 import threading
 
 
-# TODO：需要实现重加密证明的交互式验证（与requester交互）参考论文开源项目 实现多轮交互
 class Randomizer(BaseNode):
     def __init__(
         self,
@@ -36,8 +35,9 @@ class Randomizer(BaseNode):
         self.bc_private_key = bc_private_key
         self.id = id
         self.old_alpha_primes = {}
-        # 初始化用于存储事件数据的字典
-        self.event_data = {}
+
+        # 初始化用于存储子任务被选中Randomizers的字典
+        self.selectedRandomizers = {}
 
         # 基类初始化
         super().__init__(
@@ -54,7 +54,7 @@ class Randomizer(BaseNode):
         # 0.注册
         tx_hash = self.contract_interface.send_transaction("registerRandomizer")
         log.debug(f"【Randomizer】{self.id} registrated")
-        
+
         # 1.启动事件监听器
         # 监听SubTaskAnswerSubmitted事件，如果发现自己被选中了，则保存该task被选中的Randomizer列表
         self.contract_interface.listen_for_events(
@@ -83,29 +83,32 @@ class Randomizer(BaseNode):
 
         # 1.证明者发送e_prime，并保存alpha_tmp
         e_prime, alpha_tmp = self.encryptor.proveReEncrypt_1()
-        sendLine(conn, e_prime)
+        sendLine(conn, str(e_prime))
 
         # 2.接收验证者发送的挑战c，并构造和发送beta
         c = recvLine(conn)
         beta = self.encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)
         sendLine(conn, beta)
 
-        log.debug(f"【Randomizer】successed verified ZKP: {commit}")
+        log.debug(f"【Randomizer】{self.id} successed handled ZKP verification")
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
         # 仅当自己被选中才执行后续操作
         if self.id in args["selectedRandomizers"]:
-            event_info = {
-                "subTaskId": args["subTaskId"],
-                "commit": args["commit"],
-                "filehash": args["filehash"],
-                "selectedRandomizers": args["selectedRandomizers"],
-            }
             # 使用subTaskId作为索引来存储事件数据
-            self.event_data[args["subTaskId"]] = event_info
+            self.selectedRandomizers[args["subTaskId"]] = args["selectedRandomizers"]
             # 如果自己是第一顺位，则进行重加密
             if self.id == args["selectedRandomizers"][0]:
-                self.__perform_re_encryption(args["filehash"])
+                self.__perform_re_encryption(args["subTaskId"], args["filehash"])
+
+    def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
+        # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
+        if args["subTaskId"] in self.selectedRandomizers:
+            # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
+            if self.id == find_next_element(
+                self.selectedRandomizers[args["subTaskId"]], args["randomizerId"]
+            ):
+                self.__perform_re_encryption(args["subTaskId"], args["filehash"])
 
     def __perform_re_encryption(self, task_id, filehash):
         # 1.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
@@ -118,7 +121,7 @@ class Randomizer(BaseNode):
 
         # 3.提交重加密结果
         file_hash = self.submit_ipfs(str(new_ciphertext))
-        log.debug(f"【Randomizer】successfully uploaded result to ipfs: {file_hash}")
+        log.debug(f"【Randomizer】{self.id} successfully uploaded result to ipfs: {file_hash}")
 
         # 4.在本地保存一份结果 用于后续验证
         commit = self._generate_commitment(new_ciphertext)
@@ -131,17 +134,7 @@ class Randomizer(BaseNode):
             commit,
             file_hash,
         )
-        log.debug(f"【Randomizer】successfully uploaded commit to blockchain: {tx_hash}")
-
-    def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
-        # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
-        if args["subTaskId"] in self.event_data:
-            event_info = self.event_data[args["subTaskId"]]
-            # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
-            if self.id == find_next_element(
-                event_info["selectedRandomizers"], args["randomizerId"]
-            ):
-                self.__perform_re_encryption(args["subTaskId"], event_info["filehash"])
+        log.debug(f"【Randomizer】{self.id} successfully uploaded commit to blockchain: {tx_hash}")
 
 
 if __name__ == "__main__":
@@ -168,9 +161,7 @@ if __name__ == "__main__":
     # 模拟触发event
     account = "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
     private_key = "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
-    randomizer.contract_interface.send_transaction(
-        "receiveInteger", 123
-    )
+    randomizer.contract_interface.send_transaction("receiveInteger", 123)
 
     # 异步监听时可以做其他事
     time.sleep(1000000)

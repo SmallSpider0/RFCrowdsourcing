@@ -5,12 +5,12 @@ contract CrowdsourcingContract {
     // 定义事件
     event SubTaskAnswerSubmitted(
         uint32 subTaskId,
-        bytes32 commit,
         string filehash,
         uint8[] selectedRandomizers
     );
     event SubTaskAnswerEncrypted(
         uint32 subTaskId,
+        string filehash,
         uint8 randomizerId
     );
     event SubTaskEncryptionCompleted(uint32 subTaskId);
@@ -112,7 +112,6 @@ contract CrowdsourcingContract {
         subTask.initialFilehash = filehash;
         emit SubTaskAnswerSubmitted(
             subTaskId,
-            commit,
             filehash,
             selectedRandomizers
         );
@@ -192,6 +191,7 @@ contract CrowdsourcingContract {
             // 抛出成功提交重加密结果的event 请求下一个Randomizer重加密
             emit SubTaskAnswerEncrypted(
                 subTaskId,
+                newFilehash,
                 randomizerInfo[msg.sender].id
             );
         }

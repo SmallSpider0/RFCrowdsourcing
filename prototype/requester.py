@@ -80,9 +80,9 @@ class Requester(BaseNode):
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
         # 保存该子任务的重加密者id顺序
         self.randomizer_of_subtasks[args["subTaskId"]] = args["selectedRandomizers"]
-        # TODO：完成
 
     def __handle_SubTaskEncryptionCompleted(self, raw_event, args):
+
         # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
         results = []
         sub_task_id = args["subTaskId"]
@@ -90,15 +90,13 @@ class Requester(BaseNode):
             "getSubTaskFinalResult", sub_task_id
         )
         # 获取初始提交
-        results.append(
-            {"commit": ret["initialCommit"], "filehash": ret["initialFilehash"]}
-        )
+        results.append({"commit": ret[0], "filehash": ret[1]})
         # 获取所有重加密结果
-        for encryption_result in ret["encryptionResults"]:
+        for encryption_result in ret[2]:
             results.append(
                 {
-                    "commit": encryption_result["commit"],
-                    "filehash": encryption_result["filehash"],
+                    "commit": encryption_result[0],
+                    "filehash": encryption_result[1],
                 }
             )
 
@@ -124,20 +122,21 @@ class Requester(BaseNode):
                 id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
             )
             verification_results.append(valid)
-            log.debug(f"【Requester】event rets {verification_results}")
+        log.debug(f"【Requester】ZKP verification results {verification_results}")
 
         # 4.调用__answer_collection解密重加密结果并保存
         # TODO：实现
-        # self.__answer_collection(ciphertexts)
+        # self.__answer_collection(ciphertexts, verification_results)
 
     def verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
-        commit = self._generate_commitment(new_ciphertext)
-
         def handler(conn):
             # 0.发送对特定重加密结果的验证请求
+            commit = self._generate_commitment(new_ciphertext)
             sendLine(conn, commit)
+
             # 1.接收证明者发送的e'
-            e_prime = recvLine(conn)
+            e_prime_str = recvLine(conn)
+            e_prime = self.encryptor.createCiphertext(e_prime_str)
 
             # 2.验证者发送一个挑战c
             c = self.encryptor.proveReEncrypt_2()

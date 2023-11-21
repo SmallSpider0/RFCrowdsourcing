@@ -74,12 +74,12 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
     Contract = w3.eth.contract(abi=contract_interface["abi"], bytecode=bytecode)
 
     # 构建部署事务
-    transaction = Contract.constructor(*args).buildTransaction(
+    transaction = Contract.constructor(*args).build_transaction(
         {
             "from": account,
             "gas": 5000000,
-            "gasPrice": w3.eth.gasPrice,
-            "nonce": w3.eth.getTransactionCount(
+            "gasPrice": w3.to_wei("10", "gwei"),
+            "nonce": w3.eth.get_transaction_count(
                 account
             ),
         }
@@ -93,7 +93,7 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
     txn_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
     # 获取交易收据以确认
-    tx_receipt = w3.eth.waitForTransactionReceipt(txn_hash)
+    tx_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
 
     # 获取合约地址
     return (tx_receipt["contractAddress"], contract_interface["abi"])

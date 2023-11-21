@@ -1,3 +1,4 @@
 web3
-eth_abi
 ruamel.yaml
+py-solc-x
+multiaddr

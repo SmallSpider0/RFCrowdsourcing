@@ -26,6 +26,12 @@
             },
             {
                 "indexed": false,
+                "internalType": "string",
+                "name": "filehash",
+                "type": "string"
+            },
+            {
+                "indexed": false,
                 "internalType": "uint8",
                 "name": "randomizerId",
                 "type": "uint8"
@@ -42,12 +48,6 @@
                 "internalType": "uint32",
                 "name": "subTaskId",
                 "type": "uint32"
-            },
-            {
-                "indexed": false,
-                "internalType": "bytes32",
-                "name": "commit",
-                "type": "bytes32"
             },
             {
                 "indexed": false,

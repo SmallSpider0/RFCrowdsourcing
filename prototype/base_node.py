@@ -74,4 +74,4 @@ class BaseNode:
         # 更新哈希对象，这里需要确保数据是字节串
         hash_obj.update(tmp.encode())
         # 获取十六进制格式的哈希值
-        return hash_obj.hexdigest()
+        return hash_obj.digest()

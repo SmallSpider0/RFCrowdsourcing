@@ -1,5 +1,3 @@
-import json
-import time
 from prototype.utils.config import Config
 
 config = Config()
