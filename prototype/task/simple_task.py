@@ -21,6 +21,10 @@ class SimpleAnswer(AnswerInterface):
     def __init__(self, content):
         self.content = content
 
+    @classmethod
+    def msg_space(cls):
+        return list(range(10000))
+
     def validate(self):
         # 对答案内容进行简单的有效性检查
         return isinstance(self.content, int)
@@ -32,7 +36,13 @@ class SimpleAnswer(AnswerInterface):
     def from_str(cls, s):
         content = int(s)
         return cls(content)
-
+    
+    @classmethod
+    def merge(self, answers):
+        ret = 0
+        for answer in answers:
+            ret += answer.content
+        return ret
 
 class SimpleSubtask(SubTaskInterface):
     """子任务的内部类"""
@@ -44,21 +54,23 @@ class SimpleSubtask(SubTaskInterface):
 
     def execute(self):
         """执行单个子任务"""
-        time.sleep(0.5) # 模拟操作时间
+        time.sleep(0.5)  # 模拟操作时间
         ret = sum(self.content)  # 这里简单的求和为例
         return SimpleAnswer(ret)
 
     def get_id(self):
-        '''获取子任务在主任务中的唯一ID'''
+        """获取子任务在主任务中的唯一ID"""
         return self.id
 
     def __str__(self):
-        return json.dumps({"id":self.id, "description": self.description, "content": self.content})
+        return json.dumps(
+            {"id": self.id, "description": self.description, "content": self.content}
+        )
 
     @classmethod
     def from_str(cls, s):
         obj = json.loads(s)
-        return cls(obj['id'], obj["description"], obj["content"])
+        return cls(obj["id"], obj["description"], obj["content"])
 
 
 # 一个简单的累加任务
@@ -67,12 +79,27 @@ class SimpleTask(TaskInterface):
     def __init__(self, description, data, subtasks_num):
         self.description = description
         self.data = data  # 假设是一个数据集list
-        self.subtasks = self.subtask_iter(subtasks_num)
+        self._subtasks_num = subtasks_num
+        self.subtasks = self.__subtask_iter(subtasks_num)
 
-    def subtask_iter(self, num):
+    @property
+    def subtasks_num(self):
+        return self._subtasks_num
+    
+    @property
+    def SUBTASK_CLS(self):
+        return SimpleSubtask
+
+    @property
+    def ANSWER_CLS(self):
+        return SimpleAnswer
+
+    def __subtask_iter(self, num):
         splited_tasks = split_array(self.data, num)
         for i in range(num):
-            yield SimpleSubtask(i, self.description + f" - Subtask {i}", splited_tasks[i])
+            yield SimpleSubtask(
+                i, self.description + f" - Subtask {i}", splited_tasks[i]
+            )
 
     def get_subtasks(self):
         try:
@@ -80,11 +107,18 @@ class SimpleTask(TaskInterface):
         except StopIteration:
             return None  # 或者处理异常的其他方式
 
-    @classmethod
-    def evaluation(cls, answers):
+    def evaluation(self, answers):
         """评估子任务的回答"""
-        valid_answers = [answer for answer in answers if answer.validate()]
-        return valid_answers
+        valid_answers = []
+        valid_answers_indexes = []
+        index = 0
+        for answer in answers:
+            if answer.validate():
+                valid_answers.append(answer)
+                valid_answers_indexes.append(index)
+            index += 1
+        final_answer = self.ANSWER_CLS.merge(valid_answers)
+        return valid_answers_indexes, final_answer
 
 
 if __name__ == "__main__":
@@ -103,7 +137,8 @@ if __name__ == "__main__":
             answers.append(answer)
 
         # 评估答案
-        for answer in SimpleTask.evaluation(answers):
-            print(answer)
+        indexes, answer = task.evaluation(answers)
+        print(indexes)
+        print(str(answer))
 
     test_simple_task()

@@ -10,8 +10,12 @@ web3_url = config.get_config("app").get("web3_url")
 # contract_abi_path = config.get_config("smart_contract").get("abi_path")
 
 # 给节点分配秘钥
-SUBMITTER_NUM = 1
-RANDOMIZER_NUM = 4
+
+SUBMITTER_NUM = 3 #提交者数量
+RANDOMIZER_NUM = 5 #重加密者数量
+SUBTASK_NUM = 10 #子任务数量
+RE_ENC_NUM = 3 #子任务需要的重加密次数
+
 accounts = config.get_config("test")
 
 # Requester的地址和私钥
@@ -41,7 +45,7 @@ RANDOMIZER_PROVING_SERVER_PORT_BASE = 11000
 from prototype.utils.tools import deploy_smart_contract
 
 contract_address, contract_abi = deploy_smart_contract(
-    "CrowdsourcingContract", web3_url, requester_account[0], requester_account[1], 4, 2
+    "CrowdsourcingContract", web3_url, requester_account[0], requester_account[1], SUBTASK_NUM, RE_ENC_NUM
 )
 
 # with open(contract_abi_path) as file:
@@ -53,7 +57,7 @@ contract_address, contract_abi = deploy_smart_contract(
 from prototype.requester import Requester
 from prototype.task.simple_task import SimpleTask
 
-task = SimpleTask("This is a simple task", list(range(100)), 4)
+task = SimpleTask("This is a simple task", list(range(100)), SUBTASK_NUM)
 
 randomizer_list = []
 for id in range(RANDOMIZER_NUM):

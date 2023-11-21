@@ -14,6 +14,7 @@ from prototype.utils import log
 
 # 系统库
 import threading
+import queue
 
 
 class Requester(BaseNode):
@@ -36,7 +37,8 @@ class Requester(BaseNode):
         self.randomizer_list = randomizer_list
         self.task_pull_serving_port = task_pull_serving_port
         self.task = task
-        self.randomizer_of_subtasks = {}
+        self.randomizer_of_subtasks = {}  # subtaskid->使用的Randomizer列表
+        self.answers_of_subtasks = queue.LifoQueue()  # 解密后的回答对象
 
         # 基类初始化
         super().__init__(
@@ -53,11 +55,12 @@ class Requester(BaseNode):
     # 启动守护程序
     def daemon_start(self):
         # 1.启动监听器，监听特定事件
-        # TODO：调用getSubTaskFinalResult收集回答（全部重加密结果 文件hash+承诺）并处理
+        # 调用getSubTaskFinalResult收集回答（全部重加密结果 文件hash+承诺）并处理
         self.contract_interface.listen_for_events(
             "SubTaskEncryptionCompleted", self.__handle_SubTaskEncryptionCompleted, True
         )
-        # TODO：监听SubTaskAnswerSubmitted 启动计时器（如果超时需要惩罚Randomizer）
+        # 监听SubTaskAnswerSubmitted
+        # TODO：启动计时器（如果超时需要惩罚Randomizer）
         self.contract_interface.listen_for_events(
             "SubTaskAnswerSubmitted", self.__handle_SubTaskAnswerSubmitted, True
         )
@@ -69,7 +72,7 @@ class Requester(BaseNode):
         ).start()
 
         # 3.启动奖励发放器，执行随机延迟的奖励发放
-        # TODO：完成
+        threading.Thread(target=self.__reward_dist_daemon).start()
 
     def __task_pull_server(self, conn, addr):
         # 生成一个新的task 并返回
@@ -82,7 +85,7 @@ class Requester(BaseNode):
         self.randomizer_of_subtasks[args["subTaskId"]] = args["selectedRandomizers"]
 
     def __handle_SubTaskEncryptionCompleted(self, raw_event, args):
-
+        # TODO：异常返回值处理 + 重加密者奖惩
         # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
         results = []
         sub_task_id = args["subTaskId"]
@@ -101,7 +104,6 @@ class Requester(BaseNode):
             )
 
         # 2. 从IPFS获取密文，并验证承诺
-        # TODO：异常返回值处理
         ciphertexts = []
         for result in results:
             # 获取密文
@@ -118,17 +120,16 @@ class Requester(BaseNode):
         verification_results = []
         id_order = self.randomizer_of_subtasks[args["subTaskId"]]
         for i in range(1, len(ciphertexts)):
-            valid = self.verify_re_encryption(
+            valid = self.__verify_re_encryption(
                 id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
             )
             verification_results.append(valid)
         log.debug(f"【Requester】ZKP verification results {verification_results}")
 
         # 4.调用__answer_collection解密重加密结果并保存
-        # TODO：实现
-        # self.__answer_collection(ciphertexts, verification_results)
+        self.__answer_collection(args["subTaskId"], ciphertexts[0])
 
-    def verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
+    def __verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
         def handler(conn):
             # 0.发送对特定重加密结果的验证请求
             commit = self._generate_commitment(new_ciphertext)
@@ -154,18 +155,37 @@ class Requester(BaseNode):
         )
         return valid
 
-    # 【内部函数】解密提交并保存，供后续奖励发放模块处理
-    def __answer_collection(self, submissions):
+    # 解密提交并保存，供后续奖励发放模块处理
+    def __answer_collection(self, subTaskId, ciphertext):
         # 1.使用自己的私钥解密submissions中的回答
-        # 2.将解密结果放入队列，供后续处理
-        pass
+        ans_content = self.encryptor.decrypt(
+            ciphertext, self.task.ANSWER_CLS.msg_space()
+        )
+        answer_obj = self.task.ANSWER_CLS(ans_content)
 
-    # 【内部函数】由奖励发放器调用，评估结果并处理奖励发放相关事宜
-    def __evaluation(self, submissions):
+        # 2.将解密结果放入队列，供后续处理
+        self.answers_of_subtasks.put((subTaskId, answer_obj))
+        log.debug(f"【Requester】results {subTaskId} decrypted {ans_content}")
+
+    # 奖励发放器守护进程，评估结果并处理奖励发放相关事宜
+    # TODO：完成随机延迟的奖励发放
+    def __reward_dist_daemon(self):
         # 1.评估提交的正确性并保存正确的提交
         # 2.给诚实的参与者计算奖励
         # 3.使用随机延迟奖励发放算法给参与者发放奖励
-        pass
+        received_task_num = 0
+        answers = []
+        while True:
+            # print(received_task_num)
+            received_task_num += 1
+            if received_task_num > self.task.subtasks_num:
+                break
+            subTaskId, answer_obj = self.answers_of_subtasks.get()
+            answers.append(answer_obj)
+            #self.answers_of_subtasks.task_done()
+            
+        indexes, answer = self.task.evaluation(answers)
+        log.info(f"【Requester】final answer generated {answer} ")
 
 
 if __name__ == "__main__":
