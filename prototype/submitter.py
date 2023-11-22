@@ -64,6 +64,7 @@ class Submitter(BaseNode):
             answer = self.subtask.execute()
             log.debug(f"【Submitter】{self.id} answer generated: {str(answer)}")
             self.submit_answer(answer)
+            log.info(f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}")
 
     # 从requester拉取众包任务
     def pull_task(self):
@@ -85,7 +86,6 @@ class Submitter(BaseNode):
         # 上传区块链和IPFS
         filehash = self.submit_ipfs(str(answer_cipher))
         submit_tx_hash = self.__submit_commit(answer_commit, filehash)
-        log.debug(f"【Submitter】{self.id} successed submitted answer: {filehash, submit_tx_hash}")
 
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链

@@ -38,6 +38,7 @@ class Randomizer(BaseNode):
 
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
+        self.selectedRandomizersLock = threading.Lock()
 
         # 基类初始化
         super().__init__(
@@ -52,7 +53,7 @@ class Randomizer(BaseNode):
 
     def daemon_start(self):
         # 0.注册
-        tx_hash = self.contract_interface.send_transaction("registerRandomizer")
+        tx_hash = self.contract_interface.send_transaction("registerRandomizer", self.id)
         log.debug(f"【Randomizer】{self.id} registrated")
 
         # 1.启动事件监听器
@@ -93,17 +94,34 @@ class Randomizer(BaseNode):
         log.debug(f"【Randomizer】{self.id} successed handled ZKP verification")
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
+        # 使用subTaskId作为索引来存储事件数据
+        with self.selectedRandomizersLock:
+            if args["subTaskId"] not in self.selectedRandomizers:
+                ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
+                if self.id in ret:
+                    self.selectedRandomizers[args["subTaskId"]] = ret
+                else:
+                    self.selectedRandomizers[args["subTaskId"]] = None
+
         # 仅当自己被选中才执行后续操作
-        if self.id in args["selectedRandomizers"]:
-            # 使用subTaskId作为索引来存储事件数据
-            self.selectedRandomizers[args["subTaskId"]] = args["selectedRandomizers"]
+        if self.selectedRandomizers[args["subTaskId"]] != None:
             # 如果自己是第一顺位，则进行重加密
-            if self.id == args["selectedRandomizers"][0]:
+            if self.id == self.selectedRandomizers[args["subTaskId"]][0]:
                 self.__perform_re_encryption(args["subTaskId"], args["filehash"])
 
     def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
+        # 使用subTaskId作为索引来存储事件数据
+        with self.selectedRandomizersLock:
+            if args["subTaskId"] not in self.selectedRandomizers:
+                ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
+                if self.id in ret:
+                    self.selectedRandomizers[args["subTaskId"]] = ret
+                else:
+                    self.selectedRandomizers[args["subTaskId"]] = None
+
+        # print(self.id, args["subTaskId"], self.selectedRandomizers[args["subTaskId"]], args["randomizerId"])
         # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
-        if args["subTaskId"] in self.selectedRandomizers:
+        if self.selectedRandomizers[args["subTaskId"]] != None:
             # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
             if self.id == find_next_element(
                 self.selectedRandomizers[args["subTaskId"]], args["randomizerId"]
@@ -121,7 +139,6 @@ class Randomizer(BaseNode):
 
         # 3.提交重加密结果
         file_hash = self.submit_ipfs(str(new_ciphertext))
-        log.debug(f"【Randomizer】{self.id} successfully uploaded result to ipfs: {file_hash}")
 
         # 4.在本地保存一份结果 用于后续验证
         commit = self._generate_commitment(new_ciphertext)
@@ -134,7 +151,7 @@ class Randomizer(BaseNode):
             commit,
             file_hash,
         )
-        log.debug(f"【Randomizer】{self.id} successfully uploaded commit to blockchain: {tx_hash}")
+        log.info(f"【Randomizer】{self.id} successfully handeled task {task_id}")
 
 
 if __name__ == "__main__":

@@ -5,9 +5,9 @@ contract CrowdsourcingContract {
     // 定义事件
     event SubTaskAnswerSubmitted(
         uint32 subTaskId,
-        string filehash,
-        uint8[] selectedRandomizers
+        string filehash
     );
+
     event SubTaskAnswerEncrypted(
         uint32 subTaskId,
         string filehash,
@@ -43,6 +43,7 @@ contract CrowdsourcingContract {
         bytes32 initialCommit;
         string initialFilehash;
         EncryptionResult[] encryptionResults;
+        uint8[] selectedRandomizers;
     }
 
     // 存储所有子任务
@@ -76,12 +77,12 @@ contract CrowdsourcingContract {
     }
 
     // Randomizer注册函数
-    function registerRandomizer() public {
+    function registerRandomizer(uint8 id) public {
         require(
             !randomizerInfo[msg.sender].isRegistered,
             "Randomizer already registered"
         );
-        randomizerInfo[msg.sender] = Randomizer(randomizerCount, true);
+        randomizerInfo[msg.sender] = Randomizer(id, true);
         randomizerCount++;
     }
 
@@ -112,8 +113,7 @@ contract CrowdsourcingContract {
         subTask.initialFilehash = filehash;
         emit SubTaskAnswerSubmitted(
             subTaskId,
-            filehash,
-            selectedRandomizers
+            filehash
         );
     }
 
@@ -197,14 +197,6 @@ contract CrowdsourcingContract {
         }
     }
 
-    // 获取子任务信息
-    function getSubTaskInfo(
-        uint subTaskId
-    ) public view returns (SubTask memory) {
-        require(subTaskId < subTasks.length, "SubTask does not exist");
-        return subTasks[subTaskId];
-    }
-
     // 获取子任务最终结果
     function getSubTaskFinalResult(uint subTaskId) public view returns (SubTaskResult memory) {
         require(subTaskId < subTasks.length, "SubTask does not exist");
@@ -214,7 +206,8 @@ contract CrowdsourcingContract {
         return SubTaskResult({
             initialCommit: subTask.initialCommit,
             initialFilehash: subTask.initialFilehash,
-            encryptionResults: subTask.encryptionResults
+            encryptionResults: subTask.encryptionResults,
+            selectedRandomizers: subTask.selectedRandomizers
         });
     }
 

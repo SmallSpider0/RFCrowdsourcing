@@ -6,45 +6,19 @@ app:
   # 【日志服务器】：用服务器收集各节点的日志（暂未实现）
   logserver: 127.0.0.1:1234
   # 【日志级别】：debug、info、error
-  loglevel: debug
+  loglevel: info
   # 【IPFS服务url】：本地私有部署IPFS
   ipfs_url: /ip4/127.0.0.1/tcp/5001
   # 【web3服务url】：HTTP接口地址
   web3_url: http://127.0.0.1:8545
 
 test:
-  account1: "0xe7B44655990857181d5fCfaaAe3471B2B911CaB4"
-  sk1: "0x5ddfd9257c762b7b23f65844dac651b8469c01b1b14291ffde2a9017d15453c5"
-
-  account2: "0xa75F8f732Ed213091eCbE78048D4569EE7A1A01A"
-  sk2: "0xb31c533820a3ecb533cca4846f9df24072bea5826bfddd5d4b110d09c0f8ec12"
-
-  account3: "0x745594dF04984C5Bb439C110eEe94fd355ebc094"
-  sk3: "0x9b2cd20f9e5097d4363b0f781c4cfd96c32b95d65da868538eb66cb20a0defda"
-
-  account4: "0xea0C80d135371860E9576bA7a3C850B2d11F2A42"
-  sk4: "0x443a591ef934f83d3439fce8e8b2a8004da7df634a7127c188a5ce2bc09eb9ac"
-
-  account5: "0x660358cC884bad95FFD927618F321968fe0d2926"
-  sk5: "0x1cd75a4e101282a28f278c147ad0a91f9f5f63a8f8ea0dd6c95be9101b777892"
-
-  account6: "0x7Cc7B4A4E7b14c3B5693127eFda6C6a3CD1cCAc0"
-  sk6: "0x6ec1f39faf6c7939364e6c197ade33d38908d66fcf68b6d2be007c40fb916980"
-
-  account7: "0x8514D097565AD94a9D33B35A835Cc2408BE5Ae2A"
-  sk7: "0xcf5a4e3306947fde4829b65049cac8148be919edb60dfe6258b007b24d2fdef8"
-
-  account8: "0x1e567205cC4235A79a18F10a203AD4E94967dDE4"
-  sk8: "0xa28341709e98a4487ecbed6ab08c4bb71b054ad6bccf8301c6a69606a958c215"
-
-  account9: "0x86273d404D5C6841B562eEe625dAA70f44946b42"
-  sk9: "0xb6bd65369d61d45b6d0fca976f1046f47c909a0713af67f177148448eeae9a74"
-
-  account10: "0x24C4C90a4b25B107c377224B96711E7497028E88"
-  sk10: "0xaa2916515f7225f0fbfac6fd6bf6e8aa882f3c3a1e32bdd52bfd9278a2ae8605"
+  account_path: "config/bc_keys.json"
 
 smart_contract:
   # 【合约地址】：系统中使用的合约地址（本地部署）
   address: "0xBC653A8d353F7D93844e5d94BD99aC93f4Ef588B"
   # 【合约ABI文件位置】：本地硬盘中的位置，以项目根目录为基准
   abi_path: "solidity/CrowdsourcingContract.json"
+  # 【监听合约事件的拉取频率】：秒
+  poll_interval: 1

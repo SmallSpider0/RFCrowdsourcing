@@ -14,10 +14,10 @@ from task.task_interface import AnswerInterface, TaskInterface, SubTaskInterface
 import json
 import time
 
-"""任务回答"""
-
 
 class SimpleAnswer(AnswerInterface):
+    """任务回答"""
+
     def __init__(self, content):
         self.content = content
 
@@ -36,7 +36,7 @@ class SimpleAnswer(AnswerInterface):
     def from_str(cls, s):
         content = int(s)
         return cls(content)
-    
+
     @classmethod
     def merge(self, answers):
         ret = 0
@@ -44,8 +44,9 @@ class SimpleAnswer(AnswerInterface):
             ret += answer.content
         return ret
 
+
 class SimpleSubtask(SubTaskInterface):
-    """子任务的内部类"""
+    """子任务"""
 
     def __init__(self, id, description, content):
         self.id = id
@@ -85,7 +86,7 @@ class SimpleTask(TaskInterface):
     @property
     def subtasks_num(self):
         return self._subtasks_num
-    
+
     @property
     def SUBTASK_CLS(self):
         return SimpleSubtask

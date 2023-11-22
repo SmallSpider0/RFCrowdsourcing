@@ -15,6 +15,7 @@ from prototype.utils import log
 # 系统库
 import threading
 import queue
+import time
 
 
 class Requester(BaseNode):
@@ -81,8 +82,7 @@ class Requester(BaseNode):
         sendLine(conn, str(subtask))  # 将任务序列化后发送
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
-        # 保存该子任务的重加密者id顺序
-        self.randomizer_of_subtasks[args["subTaskId"]] = args["selectedRandomizers"]
+        pass
 
     def __handle_SubTaskEncryptionCompleted(self, raw_event, args):
         # TODO：异常返回值处理 + 重加密者奖惩
@@ -118,16 +118,16 @@ class Requester(BaseNode):
 
         # 3.调用__verify_re_encryption验证重加密结果
         verification_results = []
-        id_order = self.randomizer_of_subtasks[args["subTaskId"]]
+        id_order = ret[3]
         for i in range(1, len(ciphertexts)):
             valid = self.__verify_re_encryption(
                 id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
             )
             verification_results.append(valid)
-        log.debug(f"【Requester】ZKP verification results {verification_results}")
+        log.debug(f"【Requester】ZKP {sub_task_id} verification results {verification_results}")
 
         # 4.调用__answer_collection解密重加密结果并保存
-        self.__answer_collection(args["subTaskId"], ciphertexts[0])
+        self.__answer_collection(sub_task_id, ciphertexts[0])
 
     def __verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
         def handler(conn):
@@ -176,13 +176,11 @@ class Requester(BaseNode):
         received_task_num = 0
         answers = []
         while True:
-            # print(received_task_num)
             received_task_num += 1
             if received_task_num > self.task.subtasks_num:
                 break
             subTaskId, answer_obj = self.answers_of_subtasks.get()
             answers.append(answer_obj)
-            #self.answers_of_subtasks.task_done()
             
         indexes, answer = self.task.evaluation(answers)
         log.info(f"【Requester】final answer generated {answer} ")

@@ -54,12 +54,6 @@
                 "internalType": "string",
                 "name": "filehash",
                 "type": "string"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint8[]",
-                "name": "selectedRandomizers",
-                "type": "uint8[]"
             }
         ],
         "name": "SubTaskAnswerSubmitted",
@@ -158,77 +152,14 @@
                         "internalType": "struct CrowdsourcingContract.EncryptionResult[]",
                         "name": "encryptionResults",
                         "type": "tuple[]"
-                    }
-                ],
-                "internalType": "struct CrowdsourcingContract.SubTaskResult",
-                "name": "",
-                "type": "tuple"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "subTaskId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getSubTaskInfo",
-        "outputs": [
-            {
-                "components": [
-                    {
-                        "internalType": "bytes32",
-                        "name": "initialCommit",
-                        "type": "bytes32"
-                    },
-                    {
-                        "internalType": "string",
-                        "name": "initialFilehash",
-                        "type": "string"
-                    },
-                    {
-                        "components": [
-                            {
-                                "internalType": "bytes32",
-                                "name": "commit",
-                                "type": "bytes32"
-                            },
-                            {
-                                "internalType": "string",
-                                "name": "filehash",
-                                "type": "string"
-                            }
-                        ],
-                        "internalType": "struct CrowdsourcingContract.EncryptionResult[]",
-                        "name": "encryptionResults",
-                        "type": "tuple[]"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isInited",
-                        "type": "bool"
-                    },
-                    {
-                        "internalType": "bool",
-                        "name": "isCompleted",
-                        "type": "bool"
                     },
                     {
                         "internalType": "uint8[]",
                         "name": "selectedRandomizers",
                         "type": "uint8[]"
-                    },
-                    {
-                        "internalType": "uint8",
-                        "name": "currentRandomizerIndex",
-                        "type": "uint8"
                     }
                 ],
-                "internalType": "struct CrowdsourcingContract.SubTask",
+                "internalType": "struct CrowdsourcingContract.SubTaskResult",
                 "name": "",
                 "type": "tuple"
             }
@@ -274,7 +205,13 @@
         "type": "function"
     },
     {
-        "inputs": [],
+        "inputs": [
+            {
+                "internalType": "uint8",
+                "name": "id",
+                "type": "uint8"
+            }
+        ],
         "name": "registerRandomizer",
         "outputs": [],
         "stateMutability": "nonpayable",
