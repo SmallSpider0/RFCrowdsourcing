@@ -126,21 +126,29 @@ class ElGamal:
 
         return (ElGamal.PublicKey(p, g, h), ElGamal.PrivateKey(p, g, x))
 
+    # @classmethod
+    # def Encrypt(cls, pk, m, alpha=None):
+    #     if alpha is None:
+    #         alpha = cls.genAlpha(pk.p)
+    #     cm = pow(pk.g, m, pk.p) * pow(pk.h, alpha, pk.p) % pk.p
+    #     cr = pow(pk.g, alpha, pk.p)
+    #     return ElGamal.Ciphertext(cm, cr, pk)
+
     @classmethod
     def Encrypt(cls, pk, m, alpha=None):
         if alpha is None:
             alpha = cls.genAlpha(pk.p)
-        cm = pow(pk.g, m, pk.p) * pow(pk.h, alpha, pk.p) % pk.p
+        cm = m * pow(pk.h, alpha, pk.p) % pk.p
         cr = pow(pk.g, alpha, pk.p)
         return ElGamal.Ciphertext(cm, cr, pk)
 
     @classmethod
-    def Decrypt(cls, sk, c, message_space):
-        gm = c.cm * multiplicative_inverse(pow(c.cr, sk.x, sk.p), sk.p) % sk.p
-        for m in message_space:
-            if pow(sk.g, m, sk.p) == gm:
-                return m
-        raise ValueError("decryption failed")
+    def Decrypt(cls, sk, c):
+        # s = cr^x mod p
+        s = pow(c.cr, sk.x, sk.p)
+        # plaintext integer = cm*s^-1 mod p
+        plain = (c.cm * pow(s, sk.p - 2, sk.p)) % sk.p
+        return plain
 
     @classmethod
     def ReEncrypt(cls, pk, ciphertext, alpha_prime=None):
@@ -167,51 +175,3 @@ class ElGamal:
     @classmethod
     def genAlpha(cls, p):
         return randrange(p - 1)
-
-
-def __test():
-    message_space = list(range(1000))
-    from random import choice
-
-    for round_ in range(10):
-        print(f"test round {round_} ... ", end="", flush=True)
-        nbits = 256
-        pk, sk = ElGamal.KeyGen(nbits)
-
-        # test decrypt
-        m = choice(message_space)
-        assert (
-            ElGamal.Decrypt(sk, ElGamal.Encrypt(pk, m), message_space) == m
-        ), f"test decryption failed\n{pk}\n{sk}\n{m=}"
-
-        # test public key from str
-        assert pk == ElGamal.PublicKey.from_str(
-            str(pk)
-        ), f"test public key from str failed\n{pk=}"
-
-        # test cipher text from str
-        m = choice(message_space)
-        c = ElGamal.Encrypt(pk, m)
-        assert c == ElGamal.Ciphertext.from_str(
-            str(c)
-        ), f"test public key from str failed\n{(pk, m, c)=}"
-
-        # test homomorphic sub
-        while True:
-            m1 = choice(message_space)
-            m2 = choice(message_space)
-            if m1 - m2 in message_space:
-                break
-        alpha1 = randrange(pk.p - 1)
-        alpha2 = randrange(pk.p - 1)
-        c1 = ElGamal.Encrypt(pk, m1, alpha1)
-        c2 = ElGamal.Encrypt(pk, m2, alpha2)
-        assert (
-            ElGamal.Decrypt(sk, c1 - c2, message_space) == m1 - m2
-        ), f"test homomorphic add failed\n{sk}\n{m1=}\n{m2=}\n{alpha1=}\n{alpha2}"
-
-        print("ok.")
-
-
-if __name__ == "__main__":
-    __test()

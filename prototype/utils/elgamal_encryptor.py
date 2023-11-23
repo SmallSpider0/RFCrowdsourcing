@@ -48,10 +48,10 @@ class ElgamalEncryptor:
         return ElGamal.Encrypt(self.pk, msg, alpha)
 
     # 用私钥解密
-    def decrypt(self, ciphertext, message_space):
+    def decrypt(self, ciphertext):
         if self.sk is None:
             return False
-        return ElGamal.Decrypt(self.sk, ciphertext, message_space)
+        return ElGamal.Decrypt(self.sk, ciphertext)
 
     # 用公钥重加密
     def reEncrypt(self, ciphertext, alpha_prime=None):
@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     # 首次运行前需要生成密钥对并保存
     ElgamalEncryptor.generateAndSaveKeys(
-        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 512
+        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256
     )
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
@@ -111,8 +111,7 @@ if __name__ == "__main__":
 
     def performance_test(encryptor):
         results = [[] for _ in range(4)]
-        message_space = list(range(100000))
-        msg = 50000
+        msg = 500000
 
         for _ in range(1):
             t0 = time.time()
@@ -126,7 +125,7 @@ if __name__ == "__main__":
 
             t2 = time.time()
             # 3.解密
-            decrypted_arr = encryptor.decrypt(ciphertext, message_space)
+            decrypted = encryptor.decrypt(ciphertext)
 
             t3 = time.time()
             # 4.重加密证明
@@ -165,10 +164,10 @@ if __name__ == "__main__":
         print("Re_encrypted:", new_ciphertext)
 
         # 3.解密
-        decrypted_arr = encryptor.decrypt(ciphertext, message_space)
-        decrypted_arr_re = encryptor.decrypt(new_ciphertext, message_space)
-        print("Decrypted:", decrypted_arr)
-        print("Decrypted_re:", decrypted_arr_re)
+        decrypted = encryptor.decrypt(ciphertext)
+        decrypted_re = encryptor.decrypt(new_ciphertext)
+        print("Decrypted:", decrypted)
+        print("Decrypted_re:", decrypted_re)
 
         # 4.重加密证明
         e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
