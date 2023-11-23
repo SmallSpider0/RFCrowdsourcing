@@ -16,10 +16,11 @@ import uuid
 import os
 import hashlib
 import pickle
+from multiprocessing import Process
 
 
 # 节点的基类（Requester、Randomizer、Submitter）
-class BaseNode:
+class BaseNode(Process):
     def __init__(
         self,
         ipfs_url,
@@ -31,6 +32,9 @@ class BaseNode:
         requester_pk_file,
         requester_sk_file=None,
     ):
+        # 初始化父类
+        super(BaseNode, self).__init__()
+
         # 初始化区块链交互模块
         self.contract_interface = ContractInterface(
             provider_url, contract_address, contract_abi, bc_account, bc_private_key
@@ -43,6 +47,13 @@ class BaseNode:
 
         # 初始化IPFS交互模块
         self.ipfs_client = ipfshttpclient.connect(ipfs_url)
+
+    def run(self):
+        self._daemon_start()
+    
+    # 节点启动
+    def _daemon_start(self):
+        pass
 
     def fetch_ipfs(self, file_pointer):
         # 从分布式文件存储服务获取文件

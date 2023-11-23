@@ -54,7 +54,7 @@ class Requester(BaseNode):
         )
 
     # 启动守护程序
-    def daemon_start(self):
+    def _daemon_start(self):
         # 1.启动监听器，监听特定事件
         # 调用getSubTaskFinalResult收集回答（全部重加密结果 文件hash+承诺）并处理
         self.contract_interface.listen_for_events(
@@ -74,6 +74,8 @@ class Requester(BaseNode):
 
         # 3.启动奖励发放器，执行随机延迟的奖励发放
         threading.Thread(target=self.__reward_dist_daemon).start()
+
+        log.info(f"【Requester】started")
 
     def __task_pull_server(self, conn, addr):
         # 生成一个新的task 并返回

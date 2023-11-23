@@ -131,11 +131,11 @@ for id in range(SUBMITTER_NUM):
 # ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -b 2
 
 # 启动
-requester.daemon_start()
+requester.run()
 
 # 启动
 for randomizer in randomizers:
-    randomizer.daemon_start()
+    randomizer.run()
 
 # 等待5秒 确保监听器启动完成
 import time
@@ -143,20 +143,4 @@ time.sleep(5)
 
 # 启动
 for submitter in submitters:
-    submitter.daemon_start()
-
-# import multiprocessing
-# def start_process(target, args=()):
-#     # 创建一个新的进程
-#     process = multiprocessing.Process(target=target, args=args)
-#     process.start()
-#     return process
-
-# # 创建并启动requester进程
-# requester_process = start_process(start_requester)
-
-# # 创建并启动所有randomizer进程
-# # randomizer_processes = [start_process(randomizer.daemon_start) for randomizer in randomizers]
-
-# # 创建并启动所有submitter进程
-# # submitter_processes = [start_process(submitter.daemon_start) for submitter in submitters]
+    submitter.run()

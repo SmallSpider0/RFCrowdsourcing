@@ -49,10 +49,11 @@ class Submitter(BaseNode):
         )
 
     # 启动守护程序
-    def daemon_start(self):
+    def _daemon_start(self):
         # 创建并启动一个新线程来运行主循环
         thread = threading.Thread(target=self.__main_loop)
         thread.start()
+        log.info(f"【Submitter】started")
 
     # submitter的主循环
     def __main_loop(self):

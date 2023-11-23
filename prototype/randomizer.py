@@ -51,7 +51,7 @@ class Randomizer(BaseNode):
             requester_pk_file,
         )
 
-    def daemon_start(self):
+    def _daemon_start(self):
         # 0.注册
         self.contract_interface.send_transaction("registerRandomizer", self.id)
         log.debug(f"【Randomizer】{self.id} registrated")
@@ -71,6 +71,8 @@ class Randomizer(BaseNode):
             target=listen_on_port,
             args=(self.__proving_server, self.proving_server_port),
         ).start()
+
+        log.info(f"【Randomizer】started")
 
     # 接收Requester的请求：重加密结果的唯一id（例如区块链上的哈希），要求证明有效性
     # Randomizer应该在重加密后保存相关结果用于提供证明
