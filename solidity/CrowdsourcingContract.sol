@@ -146,7 +146,6 @@ contract CrowdsourcingContract {
         return selected;
     }
 
-
     // Randomizer进行子任务答案的重加密
     function encryptSubTaskAnswer(
         uint32 subTaskId,
@@ -180,7 +179,7 @@ contract CrowdsourcingContract {
             EncryptionResult(newCommit, newFilehash)
         );
 
-        // 若重加密次数足够，则抛出完成event
+        //若重加密次数足够，则抛出完成event
         if (subTask.encryptionResults.length >= requiredEncryptions) {
             subTask.isCompleted = true;
             emit SubTaskEncryptionCompleted(subTaskId);

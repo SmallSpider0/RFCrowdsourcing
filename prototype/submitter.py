@@ -85,20 +85,19 @@ class Submitter(BaseNode):
         answer_commit = self._generate_commitment(answer_cipher)
         # 上传区块链和IPFS
         filehash = self.submit_ipfs(str(answer_cipher))
-        submit_tx_hash = self.__submit_commit(answer_commit, filehash)
+        self.__submit_commit(answer_commit, filehash)
 
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链
         # TODO：实现基于VRF的随机数生成
         vrf_output = random.randint(1, 10000000)
-        submit_tx_hash = self.contract_interface.send_transaction(
+        self.contract_interface.send_transaction(
             "submitSubTaskAnswer",
             self.subtask.get_id(),
             commit,
             filehash,
             vrf_output
         )
-        return submit_tx_hash.hex()
 
 
 if __name__ == "__main__":

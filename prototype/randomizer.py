@@ -39,7 +39,6 @@ class Randomizer(BaseNode):
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
         self.selectedRandomizersLock = threading.Lock()
-        self.perform_re_encryptionLock = threading.Lock()
 
         # 基类初始化
         super().__init__(
@@ -54,7 +53,7 @@ class Randomizer(BaseNode):
 
     def daemon_start(self):
         # 0.注册
-        tx_hash = self.contract_interface.send_transaction("registerRandomizer", self.id)
+        self.contract_interface.send_transaction("registerRandomizer", self.id)
         log.debug(f"【Randomizer】{self.id} registrated")
 
         # 1.启动事件监听器
@@ -96,13 +95,12 @@ class Randomizer(BaseNode):
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
         # 使用subTaskId作为索引来存储事件数据
-        with self.selectedRandomizersLock:
-            if args["subTaskId"] not in self.selectedRandomizers:
-                ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
-                if self.id in ret:
-                    self.selectedRandomizers[args["subTaskId"]] = ret
-                else:
-                    self.selectedRandomizers[args["subTaskId"]] = None
+        if args["subTaskId"] not in self.selectedRandomizers:
+            ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
+            if self.id in ret:
+                self.selectedRandomizers[args["subTaskId"]] = ret
+            else:
+                self.selectedRandomizers[args["subTaskId"]] = None
 
         # 仅当自己被选中才执行后续操作
         if self.selectedRandomizers[args["subTaskId"]] != None:
@@ -112,13 +110,12 @@ class Randomizer(BaseNode):
 
     def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
         # 使用subTaskId作为索引来存储事件数据
-        with self.selectedRandomizersLock:
-            if args["subTaskId"] not in self.selectedRandomizers:
-                ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
-                if self.id in ret:
-                    self.selectedRandomizers[args["subTaskId"]] = ret
-                else:
-                    self.selectedRandomizers[args["subTaskId"]] = None
+        if args["subTaskId"] not in self.selectedRandomizers:
+            ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
+            if self.id in ret:
+                self.selectedRandomizers[args["subTaskId"]] = ret
+            else:
+                self.selectedRandomizers[args["subTaskId"]] = None
 
         # print(self.id, args["subTaskId"], self.selectedRandomizers[args["subTaskId"]], args["randomizerId"])
         # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
@@ -146,7 +143,7 @@ class Randomizer(BaseNode):
         self.old_alpha_primes[commit] = alpha_prime
 
         # 5.将重加密结果的承诺和文件指针上传至区块链
-        tx_hash = self.contract_interface.send_transaction(
+        self.contract_interface.send_transaction(
             "encryptSubTaskAnswer",
             task_id,
             commit,

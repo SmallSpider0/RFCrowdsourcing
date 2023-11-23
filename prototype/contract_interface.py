@@ -48,10 +48,11 @@ class ContractInterface:
         # 账户相关参数
         self.bc_account = bc_account
         self.bc_private_key = bc_private_key
+        self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
         self.transaction_queue = queue.LifoQueue()
 
-        # 其它参数
-        self.transaction_lock = threading.Lock()
+        # 启动独立进程串行发送交易
+        threading.Thread(target=self.__trans_submission_daemon).start()
 
 
     def send_transaction(self, function_name: str, *args, **kwargs):
@@ -62,32 +63,34 @@ class ContractInterface:
         :param args: Positional arguments to pass to the function.
         :param kwargs: Keyword arguments to pass to the function.
 
-        :return: Transaction hash of the sent transaction.
         """
-        def wait_for_receipt(txn_hash, function_name):
-            receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 10)
-            if receipt.status != 1:
-                print(function_name, receipt)
+        self.transaction_queue.put((function_name, args, kwargs))
 
-        with self.transaction_lock:
+    def __trans_submission_daemon(self):
+        # 按请求顺序发送交易
+        while True:
+            function_name, args, kwargs = self.transaction_queue.get()        
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
             txn = func.build_transaction(
                 {
                     "from": self.bc_account,
-                    "nonce": self.web3.eth.get_transaction_count(self.bc_account),
+                    "nonce": self.bc_nonce,
+                    "gas": 2000000,
                     "gasPrice": self.web3.to_wei(10, 'gwei'),
                 }
             )
+            # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
             signed_txn = self.web3.eth.account.sign_transaction(txn, self.bc_private_key)
             try:
                 txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-                receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 10)
-                # threading.Thread(target=wait_for_receipt, args=((txn_hash, function_name,))).start()
-                return txn_hash
+                time.sleep(0.1)
+                # receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 10, 2)
+                # if receipt.status != 1:
+                #     print(function_name, receipt)
             except Exception as e:
-                print(f"Error sending transaction {function_name}: {e}")
-                # 可以考虑在这里重试或记录错误
+                print(f"Error sending transaction {function_name} {self.bc_account} {self.bc_nonce}: {e}")
+            self.bc_nonce +=1
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
@@ -115,7 +118,7 @@ class ContractInterface:
         """
         # 创建事件过滤器
         event_filter = getattr(self.contract.events, event_name).create_filter(
-            fromBlock="0x0"
+            fromBlock="latest"
         )
         if is_async:
             worker = Thread(
@@ -124,19 +127,13 @@ class ContractInterface:
                 daemon=True,
             )
             worker.start()
+            # 等待1秒 确保启动完成
+            time.sleep(1)
         else:
             self.__log_loop(event_filter, event_handler, POLL_INTERVAL)
 
+
     def __log_loop(self, event_filter, event_handler, poll_interval):
-        """
-        Internal method to continuously check for new events and handle them.
-
-        :param event_filter: Web3 event filter object.
-        :param event_handler: Function to handle the events.
-        :param poll_interval: Time interval to wait between polls.
-
-        :return: None
-        """
         while True:
             for event in event_filter.get_new_entries():
                 event_handler(event, event["args"])
@@ -169,11 +166,10 @@ if __name__ == "__main__":
         "IntegerReceived", handle_integer_received, is_async=True
     )
 
+    time.sleep(1)
+
     contract_interface.send_transaction("receiveInteger", 123)
 
     lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
     print('lastReceivedInteger',lastReceivedInteger)
 
-    # 使用异步模式监听事件时 主程序可以运行其它代码
-    for _ in range(10):
-        time.sleep(1)
