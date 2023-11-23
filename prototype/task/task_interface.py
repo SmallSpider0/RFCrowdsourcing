@@ -1,13 +1,6 @@
 from abc import ABC, abstractmethod
 
 class AnswerInterface(ABC):
-
-    @classmethod
-    @abstractmethod
-    def msg_space(self):
-        '''获取答案的消息空间(一个list 包含了所有可能的回答)'''
-        pass
-
     @abstractmethod
     def validate(self):
         '''验证答案的有效性'''

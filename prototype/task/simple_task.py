@@ -17,13 +17,8 @@ import time
 
 class SimpleAnswer(AnswerInterface):
     """任务回答"""
-
     def __init__(self, content):
         self.content = content
-
-    @classmethod
-    def msg_space(cls):
-        return list(range(10000))
 
     def validate(self):
         # 对答案内容进行简单的有效性检查

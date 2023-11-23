@@ -16,6 +16,11 @@ RANDOMIZER_NUM = 20 #重加密者数量
 SUBTASK_NUM = 100 #子任务数量
 RE_ENC_NUM = 3 #子任务需要的重加密次数
 
+# SUBMITTER_NUM = 2 #提交者数量
+# RANDOMIZER_NUM = 5 #重加密者数量
+# SUBTASK_NUM = 10 #子任务数量
+# RE_ENC_NUM = 3 #子任务需要的重加密次数
+
 
 import json
 import random
@@ -60,7 +65,7 @@ contract_address, contract_abi = deploy_smart_contract(
 from prototype.requester import Requester
 from prototype.task.simple_task import SimpleTask
 
-task = SimpleTask("This is a simple task", list(range(100)), SUBTASK_NUM)
+task = SimpleTask("This is a simple task", list(range(1,101)), SUBTASK_NUM)
 
 randomizer_list = []
 for id in range(RANDOMIZER_NUM):
@@ -128,7 +133,7 @@ for id in range(SUBMITTER_NUM):
         )
     )
 
-# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -b 2
+# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -b 5
 
 # 启动
 requester.run()
@@ -137,7 +142,6 @@ requester.run()
 for randomizer in randomizers:
     randomizer.run()
 
-# 等待5秒 确保监听器启动完成
 import time
 time.sleep(5)
 

@@ -30,8 +30,10 @@ class ElgamalEncryptor:
 
     # 生成密钥对
     @classmethod
-    def generateAndSaveKeys(cls, public_key_file, private_key_file, bits=256):
-        pk, sk = ElGamal.KeyGen(bits)
+    def generateAndSaveKeys(
+        cls, public_key_file, private_key_file, iNumBits=256, iConfidence=32
+    ):
+        pk, sk = ElGamal.KeyGen(iNumBits, iConfidence)
         with open(public_key_file, "wb") as f:
             pickle.dump(str(pk), f)
         with open(private_key_file, "wb") as f:
@@ -98,16 +100,32 @@ class ElgamalEncryptor:
 
 if __name__ == "__main__":
     import time
+    from Crypto.Util.number import inverse as multiplicative_inverse
 
     # 首次运行前需要生成密钥对并保存
-    ElgamalEncryptor.generateAndSaveKeys(
-        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256
-    )
+    # st = time.time()
+    # ElgamalEncryptor.generateAndSaveKeys(
+    #     "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256, 32
+    # )
+    # print(time.time() - st)
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
     pk_file = "tmp/keypairs/pk.pkl"
     sk_file = "tmp/keypairs/sk.pkl"
     encryptor = ElgamalEncryptor(pk_file, sk_file)
+
+    def homo_test(encryptor):
+        for _ in range(10000):
+            msg = randrange(1,10000)
+            ciphertext = encryptor.encrypt(msg)
+            alpha_prime = encryptor.genAlpha()
+            new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
+            
+            try:
+                c1 = -new_ciphertext
+            except:
+                print(msg)
+
 
     def performance_test(encryptor):
         results = [[] for _ in range(4)]
@@ -150,7 +168,7 @@ if __name__ == "__main__":
     def base_test(encryptor):
         # 1.加密
         message_space = list(range(10000))
-        msg = 9999
+        msg = 11
         ciphertext = encryptor.encrypt(msg)
 
         ciphertext_file = "tmp/ciphertext.pkl"
@@ -158,18 +176,23 @@ if __name__ == "__main__":
             pickle.dump(str(ciphertext), f)
         print("Encrypted:", ciphertext)
 
-        # 2.重加密（需要实现re_encrypt方法）
+        # 2.重加密
         alpha_prime = encryptor.genAlpha()
         new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
         print("Re_encrypted:", new_ciphertext)
 
-        # 3.解密
+        # 3.同态性质
+        cipher_0 = new_ciphertext + ciphertext
+
+        # 4.解密
         decrypted = encryptor.decrypt(ciphertext)
         decrypted_re = encryptor.decrypt(new_ciphertext)
+        decrypted_ho = encryptor.decrypt(cipher_0)
         print("Decrypted:", decrypted)
         print("Decrypted_re:", decrypted_re)
+        print("Decrypted_ho:", decrypted_ho)
 
-        # 4.重加密证明
+        # 5.重加密证明
         e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
         c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
         beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
@@ -178,4 +201,4 @@ if __name__ == "__main__":
         )  # 验证者验证上述交互内容，判断重加密是否正确
         print(f"Reencryption Proof Valid: {valid}")
 
-    performance_test(encryptor)
+    homo_test(encryptor)

@@ -126,7 +126,9 @@ class Requester(BaseNode):
                 id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
             )
             verification_results.append(valid)
-        log.debug(f"【Requester】ZKP {sub_task_id} verification results {verification_results}")
+        log.debug(
+            f"【Requester】ZKP {sub_task_id} verification results {verification_results}"
+        )
 
         # 4.调用__answer_collection解密重加密结果并保存
         self.__answer_collection(sub_task_id, ciphertexts[0])
@@ -160,9 +162,7 @@ class Requester(BaseNode):
     # 解密提交并保存，供后续奖励发放模块处理
     def __answer_collection(self, subTaskId, ciphertext):
         # 1.使用自己的私钥解密submissions中的回答
-        ans_content = self.encryptor.decrypt(
-            ciphertext, self.task.ANSWER_CLS.msg_space()
-        )
+        ans_content = self.encryptor.decrypt(ciphertext)
         answer_obj = self.task.ANSWER_CLS(ans_content)
 
         # 2.将解密结果放入队列，供后续处理
@@ -183,7 +183,7 @@ class Requester(BaseNode):
                 break
             subTaskId, answer_obj = self.answers_of_subtasks.get()
             answers.append(answer_obj)
-            
+
         indexes, answer = self.task.evaluation(answers)
         log.info(f"【Requester】final answer generated {answer} ")
 
