@@ -37,6 +37,17 @@ def find_next_element(array, element):
     except ValueError:
         return None  # 元素不在数组中
 
+def process_accounts(inputfile, outputfile):
+    """将Ganache导出的测试账户文件转成本项目所需的格式"""
+    with open(inputfile, 'r') as f:
+        keys = json.load(f)
+
+    output = []
+    for k,v in keys["private_keys"].items():
+        output.append((Web3.to_checksum_address(k),v))
+
+    with open(outputfile, 'w') as f:
+        f.write(json.dumps(output))
 
 def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
     # 1.读取solidity文件夹中合约源码并编译 得到字节码和ABI

@@ -11,15 +11,11 @@ web3_url = config.get_config("app").get("web3_url")
 
 # 给节点分配秘钥
 
-# SUBMITTER_NUM = 100 #提交者数量
-# RANDOMIZER_NUM = 20 #重加密者数量
-# SUBTASK_NUM = 100 #子任务数量
-# RE_ENC_NUM = 3 #子任务需要的重加密次数
-
-SUBMITTER_NUM = 10 #提交者数量
+SUBMITTER_NUM = 100 #提交者数量
 RANDOMIZER_NUM = 20 #重加密者数量
 SUBTASK_NUM = 100 #子任务数量
 RE_ENC_NUM = 3 #子任务需要的重加密次数
+
 
 import json
 import random
@@ -141,6 +137,26 @@ requester.daemon_start()
 for randomizer in randomizers:
     randomizer.daemon_start()
 
+# 等待5秒 确保监听器启动完成
+import time
+time.sleep(5)
+
 # 启动
 for submitter in submitters:
     submitter.daemon_start()
+
+# import multiprocessing
+# def start_process(target, args=()):
+#     # 创建一个新的进程
+#     process = multiprocessing.Process(target=target, args=args)
+#     process.start()
+#     return process
+
+# # 创建并启动requester进程
+# requester_process = start_process(start_requester)
+
+# # 创建并启动所有randomizer进程
+# # randomizer_processes = [start_process(randomizer.daemon_start) for randomizer in randomizers]
+
+# # 创建并启动所有submitter进程
+# # submitter_processes = [start_process(submitter.daemon_start) for submitter in submitters]

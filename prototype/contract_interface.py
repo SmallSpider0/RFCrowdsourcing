@@ -127,8 +127,6 @@ class ContractInterface:
                 daemon=True,
             )
             worker.start()
-            # 等待1秒 确保启动完成
-            time.sleep(1)
         else:
             self.__log_loop(event_filter, event_handler, POLL_INTERVAL)
 
