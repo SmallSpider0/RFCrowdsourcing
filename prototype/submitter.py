@@ -64,7 +64,7 @@ class Submitter(BaseNode):
             answer = self.subtask.execute()
             log.debug(f"【Submitter】{self.id} answer generated: {str(answer)}")
             self.submit_answer(answer)
-            log.info(f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}")
+            log.debug(f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}")
 
     # 从requester拉取众包任务
     def pull_task(self):

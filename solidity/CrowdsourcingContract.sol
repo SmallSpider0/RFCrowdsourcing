@@ -95,11 +95,6 @@ contract CrowdsourcingContract {
     ) public {
         SubTask storage subTask = subTasks[subTaskId];
         require(!subTask.isInited, "SubTask already inited");
-        // 验证VRF输出和证据 ...
-        // 简单的VRF验证（不具备安全性）
-        // 仅用于测试！！！！
-        // require(keccak256(vrfProof) == keccak256(vrfProof), "Invalid VRF proof");
-
         // 使用VRF输出选择Randomizer
         uint8[] memory selectedRandomizers = selectRandomizers(
             vrfOutput,
@@ -107,7 +102,6 @@ contract CrowdsourcingContract {
             randomizerCount
         );
         subTask.selectedRandomizers = selectedRandomizers;
-
         subTask.isInited = true;
         subTask.initialCommit = commit;
         subTask.initialFilehash = filehash;
@@ -121,7 +115,7 @@ contract CrowdsourcingContract {
     function selectRandomizers(
         uint seed,
         uint count,
-        uint randomizerPoolSize
+        uint8 randomizerPoolSize
     ) private pure returns (uint8[] memory) {
         require(
             count <= randomizerPoolSize,
@@ -135,7 +129,9 @@ contract CrowdsourcingContract {
 
         for (uint8 i = 0; i < count; i++) {
             seed = uint(keccak256(abi.encode(seed, i)));
-            uint8 j = i + uint8(seed % (randomizerPoolSize - i));
+            uint modResult = seed % (randomizerPoolSize - i);
+            require(modResult <= 255, "Mod result out of range for uint8");
+            uint8 j = i + uint8(modResult);
             // Swap pool[i] and pool[j]
             uint8 temp = pool[i];
             pool[i] = pool[j];
@@ -149,6 +145,7 @@ contract CrowdsourcingContract {
 
         return selected;
     }
+
 
     // Randomizer进行子任务答案的重加密
     function encryptSubTaskAnswer(

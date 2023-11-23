@@ -39,6 +39,7 @@ class Randomizer(BaseNode):
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
         self.selectedRandomizersLock = threading.Lock()
+        self.perform_re_encryptionLock = threading.Lock()
 
         # 基类初始化
         super().__init__(

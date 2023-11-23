@@ -6,7 +6,7 @@ app:
   # 【日志服务器】：用服务器收集各节点的日志（暂未实现）
   logserver: 127.0.0.1:1234
   # 【日志级别】：debug、info、error
-  loglevel: info
+  loglevel: debug
   # 【IPFS服务url】：本地私有部署IPFS
   ipfs_url: /ip4/127.0.0.1/tcp/5001
   # 【web3服务url】：HTTP接口地址

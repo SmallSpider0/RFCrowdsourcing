@@ -4,9 +4,9 @@
         "inputs": [
             {
                 "indexed": false,
-                "internalType": "uint8[]",
+                "internalType": "uint8",
                 "name": "value",
-                "type": "uint8[]"
+                "type": "uint8"
             }
         ],
         "name": "IntegerReceived",
@@ -28,9 +28,9 @@
     {
         "inputs": [
             {
-                "internalType": "uint256",
+                "internalType": "uint8",
                 "name": "_value",
-                "type": "uint256"
+                "type": "uint8"
             }
         ],
         "name": "receiveInteger",

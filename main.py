@@ -58,9 +58,6 @@ contract_address, contract_abi = deploy_smart_contract(
     "CrowdsourcingContract", web3_url, requester_account[0], requester_account[1], SUBTASK_NUM, RE_ENC_NUM
 )
 
-# with open(contract_abi_path) as file:
-#     contract_abi = json.loads(file.read())
-
 # ------------------
 # 1.初始化 requester
 # ------------------
@@ -135,7 +132,7 @@ for id in range(SUBMITTER_NUM):
         )
     )
 
-# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q
+# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -b 2
 
 # 启动
 requester.daemon_start()

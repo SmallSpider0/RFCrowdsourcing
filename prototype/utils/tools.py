@@ -78,7 +78,7 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
         {
             "from": account,
             "gas": 5000000,
-            "gasPrice": 765625000,
+            "gasPrice": w3.to_wei(10, 'gwei'),
             "nonce": w3.eth.get_transaction_count(
                 account
             ),

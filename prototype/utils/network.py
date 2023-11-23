@@ -44,17 +44,23 @@ def sendLine(s, data):
     # 发送数据
     s.sendall(serialized_data)
 
-def listen_on_port(handler, port):
+def listen_on_port(handler, port, isAsync = True):
     with socket.create_server(("", port)) as sock:
         while True:
             conn, addr = sock.accept()
-            threading.Thread(
-                target=handler,
-                args=(
-                    conn,
-                    addr,
-                ),
-            ).start()
+            # 异步处理
+            if isAsync:
+                threading.Thread(
+                    target=handler,
+                    args=(
+                        conn,
+                        addr,
+                    ),
+                ).start()
+            # 串行处理
+            else:
+                handler(conn, addr)
+
 
 def connect_to(handler, port, ip="localhost"):
     with socket.create_connection((ip, port)) as sock:
