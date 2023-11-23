@@ -144,3 +144,6 @@ time.sleep(5)
 # 启动
 for submitter in submitters:
     submitter.run()
+
+# TODO：实现一个测试客户端，控制这些节点进行实验
+# TODO：实现CIFAR10标记任务

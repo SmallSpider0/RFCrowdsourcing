@@ -1,6 +1,7 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
@@ -75,7 +76,7 @@ class ElgamalEncryptor:
         return c
 
     # 重加密证明通信内容 3/3
-    def proveReEncrypt_3(self, c, alpha, alpha_tmp)->int:
+    def proveReEncrypt_3(self, c, alpha, alpha_tmp) -> int:
         # 3.证明者基于挑战c构造并发送beta
         beta = (c * alpha + alpha_tmp) % (self.pk.p - 1)  # 计算响应beta
         return beta
@@ -96,9 +97,11 @@ class ElgamalEncryptor:
 
 
 if __name__ == "__main__":
+    import time
+
     # 首次运行前需要生成密钥对并保存
     ElgamalEncryptor.generateAndSaveKeys(
-        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256
+        "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 512
     )
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
@@ -106,33 +109,74 @@ if __name__ == "__main__":
     sk_file = "tmp/keypairs/sk.pkl"
     encryptor = ElgamalEncryptor(pk_file, sk_file)
 
-    # 1.加密
-    # 加密的输入是byte_array（即每个元素在0-255之间的整数数组）
-    message_space = list(range(1000))
-    msg = 123
-    ciphertext = encryptor.encrypt(msg)
+    def performance_test(encryptor):
+        results = [[] for _ in range(4)]
+        message_space = list(range(100000))
+        msg = 50000
 
-    ciphertext_file = "tmp/ciphertext.pkl"
-    with open(ciphertext_file, "wb") as f:
-        pickle.dump(str(ciphertext), f)
-    print("Encrypted:", ciphertext)
+        for _ in range(1):
+            t0 = time.time()
+            # 1.加密
+            ciphertext = encryptor.encrypt(msg)
 
-    # 2.重加密（需要实现re_encrypt方法）
-    alpha_prime = encryptor.genAlpha()
-    new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
-    print("Re_encrypted:", new_ciphertext)
+            t1 = time.time()
+            # 2.重加密（需要实现re_encrypt方法）
+            alpha_prime = encryptor.genAlpha()
+            new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
 
-    # 3.解密
-    decrypted_arr = encryptor.decrypt(ciphertext, message_space)
-    decrypted_arr_re = encryptor.decrypt(new_ciphertext, message_space)
-    print("Decrypted:", decrypted_arr)
-    print("Decrypted_re:", decrypted_arr_re)
+            t2 = time.time()
+            # 3.解密
+            decrypted_arr = encryptor.decrypt(ciphertext, message_space)
 
-    # 4.重加密证明
-    e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
-    c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
-    beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
-    valid = encryptor.verifyReEncrypt(
-        new_ciphertext, ciphertext, e_prime, c, beta
-    )  # 验证者验证上述交互内容，判断重加密是否正确
-    print(f"Reencryption Proof Valid: {valid}")
+            t3 = time.time()
+            # 4.重加密证明
+            (
+                e_prime,
+                alpha_tmp,
+            ) = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
+            c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
+            beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
+            valid = encryptor.verifyReEncrypt(
+                new_ciphertext, ciphertext, e_prime, c, beta
+            )  # 验证者验证上述交互内容，判断重加密是否正确
+            t4 = time.time()
+            results[0].append(t1 - t0)
+            results[1].append(t2 - t1)
+            results[2].append(t3 - t2)
+            results[3].append(t4 - t3)
+        for res in results:
+            print(f"{sum(res)/len(res):.6f}")
+
+    # 功能测试
+    def base_test(encryptor):
+        # 1.加密
+        message_space = list(range(10000))
+        msg = 9999
+        ciphertext = encryptor.encrypt(msg)
+
+        ciphertext_file = "tmp/ciphertext.pkl"
+        with open(ciphertext_file, "wb") as f:
+            pickle.dump(str(ciphertext), f)
+        print("Encrypted:", ciphertext)
+
+        # 2.重加密（需要实现re_encrypt方法）
+        alpha_prime = encryptor.genAlpha()
+        new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
+        print("Re_encrypted:", new_ciphertext)
+
+        # 3.解密
+        decrypted_arr = encryptor.decrypt(ciphertext, message_space)
+        decrypted_arr_re = encryptor.decrypt(new_ciphertext, message_space)
+        print("Decrypted:", decrypted_arr)
+        print("Decrypted_re:", decrypted_arr_re)
+
+        # 4.重加密证明
+        e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
+        c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
+        beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
+        valid = encryptor.verifyReEncrypt(
+            new_ciphertext, ciphertext, e_prime, c, beta
+        )  # 验证者验证上述交互内容，判断重加密是否正确
+        print(f"Reencryption Proof Valid: {valid}")
+
+    performance_test(encryptor)
