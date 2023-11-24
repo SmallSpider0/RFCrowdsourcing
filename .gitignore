@@ -1,3 +1,6 @@
+# mychain
+mychain/data*/geth/
+
 # tmp
 tmp/
 solidity/artifacts

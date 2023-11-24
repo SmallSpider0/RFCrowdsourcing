@@ -1,6 +1,7 @@
 from solcx import compile_standard
 import solcx
 from web3 import Web3
+from web3.middleware import geth_poa_middleware
 import re
 import json
 
@@ -80,6 +81,7 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
 
     # 连接私有链节点
     w3 = Web3(Web3.HTTPProvider(web3_url))
+    w3.middleware_onion.inject(geth_poa_middleware, layer=0) # 兼容POA
 
     # 创建合约类
     Contract = w3.eth.contract(abi=contract_interface["abi"], bytecode=bytecode)
@@ -89,7 +91,7 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
         {
             "from": account,
             "gas": 5000000,
-            "gasPrice": w3.to_wei(10, 'gwei'),
+            "gasPrice": 0,
             "nonce": w3.eth.get_transaction_count(
                 account
             ),

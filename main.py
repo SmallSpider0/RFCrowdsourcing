@@ -6,8 +6,6 @@ config = Config()
 # 外部服务相关参数
 ipfs_url = config.get_config("app").get("ipfs_url")
 web3_url = config.get_config("app").get("web3_url")
-# contract_address = config.get_config("smart_contract").get("address")
-# contract_abi_path = config.get_config("smart_contract").get("abi_path")
 
 # # 大规模测试
 # SUBMITTER_NUM = 100 #提交者数量
@@ -16,16 +14,16 @@ web3_url = config.get_config("app").get("web3_url")
 # RE_ENC_NUM = 3 #子任务需要的重加密次数
 
 # 标准测试
-SUBMITTER_NUM = 5 #提交者数量
-RANDOMIZER_NUM = 10 #重加密者数量
-SUBTASK_NUM = 50 #子任务数量
-RE_ENC_NUM = 3 #子任务需要的重加密次数
+# SUBMITTER_NUM = 5 #提交者数量
+# RANDOMIZER_NUM = 20 #重加密者数量
+# SUBTASK_NUM = 20 #子任务数量
+# RE_ENC_NUM = 2 #子任务需要的重加密次数
 
-# # 最小系统
-# SUBMITTER_NUM = 1 #提交者数量
-# RANDOMIZER_NUM = 1 #重加密者数量
-# SUBTASK_NUM = 10 #子任务数量
-# RE_ENC_NUM = 1 #子任务需要的重加密次数
+# 最小系统
+SUBMITTER_NUM = 1 #提交者数量
+RANDOMIZER_NUM = 2 #重加密者数量
+SUBTASK_NUM = 10 #子任务数量
+RE_ENC_NUM = 1 #子任务需要的重加密次数
 
 
 import json
@@ -150,7 +148,7 @@ for randomizer in randomizers:
 
 # 等待注册交易执行完成
 import time
-time.sleep(8)
+time.sleep(20)
 
 # 启动
 for submitter in submitters:

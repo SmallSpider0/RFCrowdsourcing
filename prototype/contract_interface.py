@@ -13,13 +13,13 @@ config = Config()
 
 # 系统库
 from web3 import Web3
+from web3.middleware import geth_poa_middleware
 from threading import Thread
 import threading
 import time
 import queue
 
 POLL_INTERVAL = config.get_config("smart_contract").get("poll_interval")
-
 
 class ContractInterface:
     def __init__(
@@ -41,9 +41,11 @@ class ContractInterface:
         """
         # 合约相关参数
         self.web3 = Web3(Web3.HTTPProvider(provider_url))
+        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0) # 兼容POA
         self.contract = self.web3.eth.contract(
             address=contract_address, abi=contract_abi
         )
+
 
         # 账户相关参数
         self.bc_account = bc_account
@@ -83,15 +85,15 @@ class ContractInterface:
 
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
-        last_tran_time = 0
+        # last_tran_time = 0
         while True:
             # 获取下一个待发送的交易
             function_name, args, kwargs = self.transaction_queue.get()
 
             # 延时 防止交易发送过快
-            trans_interval = time.time() - last_tran_time
-            if trans_interval < 0.5:
-                time.sleep(0.5 - trans_interval)
+            # trans_interval = time.time() - last_tran_time
+            # if trans_interval < 0.5:
+            #     time.sleep(0.5 - trans_interval)
 
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
@@ -111,7 +113,7 @@ class ContractInterface:
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
             # self.sent_transaction_queue.put((function_name, txn_hash))
             self.bc_nonce += 1
-            last_tran_time = time.time()
+            # last_tran_time = time.time()
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
@@ -162,8 +164,8 @@ class ContractInterface:
 if __name__ == "__main__":
     # 测试参数定义
     provider_url = "http://127.0.0.1:8545"
-    account = "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1"
-    private_key = "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
+    account = "0x9A82f98d6083c30632A22a9e93a9dfA8B054C929"
+    private_key = "0x11408f483264dcc0b831b0b95ffbfddc19d9a3ae98fc289baa5592d5b1e1d331"
 
     # 合约部署
     from utils.tools import deploy_smart_contract
