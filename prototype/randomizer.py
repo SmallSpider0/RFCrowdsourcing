@@ -14,6 +14,8 @@ from prototype.utils.tools import find_next_element
 
 # 系统库
 import threading
+import time
+import queue
 
 
 class Randomizer(BaseNode):
@@ -39,6 +41,7 @@ class Randomizer(BaseNode):
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
         self.selectedRandomizersLock = threading.Lock()
+        self.task_queue = queue.LifoQueue()  # 待处理的事件队列
 
         # 基类初始化
         super().__init__(
@@ -66,7 +69,10 @@ class Randomizer(BaseNode):
             "SubTaskAnswerEncrypted", self.__handle_SubTaskAnswerEncrypted, True
         )
 
-        # 2.启动重加密ZKP验证服务
+        # 2.启动事件处理服务
+        threading.Thread(target=self.__task_handler_daemon).start()
+
+        # 3.启动重加密ZKP验证服务
         threading.Thread(
             target=listen_on_port,
             args=(self.__proving_server, self.proving_server_port),
@@ -95,38 +101,43 @@ class Randomizer(BaseNode):
 
         log.debug(f"【Randomizer】{self.id} successed handled ZKP verification")
 
-    def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
-        # 使用subTaskId作为索引来存储事件数据
-        if args["subTaskId"] not in self.selectedRandomizers:
-            ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
-            if self.id in ret:
-                self.selectedRandomizers[args["subTaskId"]] = ret
-            else:
-                self.selectedRandomizers[args["subTaskId"]] = None
+    def __task_handler_daemon(self):
+        while True:
+            event_name, args = self.task_queue.get()
+            # 使用subTaskId作为索引来存储事件数据
+            if args["subTaskId"] not in self.selectedRandomizers:
+                ret = self.contract_interface.call_function(
+                    "getSelectedRandomizers", args["subTaskId"]
+                )
+                if self.id in ret:
+                    self.selectedRandomizers[args["subTaskId"]] = ret
+                else:
+                    self.selectedRandomizers[args["subTaskId"]] = None
+            if event_name == "SubTaskAnswerSubmitted":
+                # 仅当自己被选中才执行后续操作
+                if self.selectedRandomizers[args["subTaskId"]] != None:
+                    # 如果自己是第一顺位，则进行重加密
+                    if self.id == self.selectedRandomizers[args["subTaskId"]][0]:
+                        self.__perform_re_encryption(
+                            args["subTaskId"], args["filehash"]
+                        )
+            elif event_name == "SubTaskAnswerEncrypted":
+                # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
+                if self.selectedRandomizers[args["subTaskId"]] != None:
+                    # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
+                    if self.id == find_next_element(
+                        self.selectedRandomizers[args["subTaskId"]],
+                        args["randomizerId"],
+                    ):
+                        self.__perform_re_encryption(
+                            args["subTaskId"], args["filehash"]
+                        )
 
-        # 仅当自己被选中才执行后续操作
-        if self.selectedRandomizers[args["subTaskId"]] != None:
-            # 如果自己是第一顺位，则进行重加密
-            if self.id == self.selectedRandomizers[args["subTaskId"]][0]:
-                self.__perform_re_encryption(args["subTaskId"], args["filehash"])
+    def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
+        self.task_queue.put(("SubTaskAnswerSubmitted", args))
 
     def __handle_SubTaskAnswerEncrypted(self, raw_event, args):
-        # 使用subTaskId作为索引来存储事件数据
-        if args["subTaskId"] not in self.selectedRandomizers:
-            ret = self.contract_interface.call_function("getSelectedRandomizers", args["subTaskId"])
-            if self.id in ret:
-                self.selectedRandomizers[args["subTaskId"]] = ret
-            else:
-                self.selectedRandomizers[args["subTaskId"]] = None
-
-        # print(self.id, args["subTaskId"], self.selectedRandomizers[args["subTaskId"]], args["randomizerId"])
-        # 根据args['subTaskId']判断是否和自己有关，若有关则从self.event_data取出任务信息
-        if self.selectedRandomizers[args["subTaskId"]] != None:
-            # 获取args['randomizerId'] 在selectedRandomizers中的位置，如果在自己id的前一位，则进行重加密
-            if self.id == find_next_element(
-                self.selectedRandomizers[args["subTaskId"]], args["randomizerId"]
-            ):
-                self.__perform_re_encryption(args["subTaskId"], args["filehash"])
+        self.task_queue.put(("SubTaskAnswerEncrypted", args))
 
     def __perform_re_encryption(self, task_id, filehash):
         # 1.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文

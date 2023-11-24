@@ -10,10 +10,9 @@ web3_url = config.get_config("app").get("web3_url")
 # contract_abi_path = config.get_config("smart_contract").get("abi_path")
 
 # 给节点分配秘钥
-
-SUBMITTER_NUM = 100 #提交者数量
+SUBMITTER_NUM = 10 #提交者数量
 RANDOMIZER_NUM = 20 #重加密者数量
-SUBTASK_NUM = 100 #子任务数量
+SUBTASK_NUM = 10 #子任务数量
 RE_ENC_NUM = 3 #子任务需要的重加密次数
 
 # SUBMITTER_NUM = 2 #提交者数量
@@ -133,7 +132,7 @@ for id in range(SUBMITTER_NUM):
         )
     )
 
-# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -b 5
+# ganache-cli -a 200 -g 0 --account_keys_path ~/ganache/keys.json --db ~/ganache/chaindata -d -q -k "berlin" -b 5
 
 # 启动
 requester.run()
@@ -142,8 +141,9 @@ requester.run()
 for randomizer in randomizers:
     randomizer.run()
 
+# 等待注册交易执行完成
 import time
-time.sleep(5)
+time.sleep(8)
 
 # 启动
 for submitter in submitters:
@@ -151,3 +151,6 @@ for submitter in submitters:
 
 # TODO：实现一个测试客户端，控制这些节点进行实验
 # TODO：实现CIFAR10标记任务
+
+# 原因似乎是 交易池超过上限？导致交易没有成功发送
+# 如何判断交易是否被成功发送？

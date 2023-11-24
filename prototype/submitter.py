@@ -91,7 +91,7 @@ class Submitter(BaseNode):
     def __submit_commit(self, commit, filehash):
         # 上传密文至区块链
         # TODO：实现基于VRF的随机数生成
-        vrf_output = random.randint(1, 10000000)
+        vrf_output = random.randint(1, 1000)
         self.contract_interface.send_transaction(
             "submitSubTaskAnswer",
             self.subtask.get_id(),

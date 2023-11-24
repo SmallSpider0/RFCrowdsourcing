@@ -40,6 +40,7 @@ class Requester(BaseNode):
         self.task = task
         self.randomizer_of_subtasks = {}  # subtaskid->使用的Randomizer列表
         self.answers_of_subtasks = queue.LifoQueue()  # 解密后的回答对象
+        self.task_queue = queue.LifoQueue()  # 待处理的事件队列
 
         # 基类初始化
         super().__init__(
@@ -66,13 +67,16 @@ class Requester(BaseNode):
             "SubTaskAnswerSubmitted", self.__handle_SubTaskAnswerSubmitted, True
         )
 
-        # 2.启动任务获取服务
+        # 2.启动事件处理服务
+        threading.Thread(target=self.__task_handler_daemon).start()
+
+        # 3.启动任务获取服务
         threading.Thread(
             target=listen_on_port,
             args=(self.__task_pull_server, self.task_pull_serving_port),
         ).start()
 
-        # 3.启动奖励发放器，执行随机延迟的奖励发放
+        # 4.启动奖励发放器，执行随机延迟的奖励发放
         threading.Thread(target=self.__reward_dist_daemon).start()
 
         log.info(f"【Requester】started")
@@ -83,55 +87,62 @@ class Requester(BaseNode):
         subtask = self.task.get_subtasks()
         sendLine(conn, str(subtask))  # 将任务序列化后发送
 
+    def __task_handler_daemon(self):
+        while True:
+            event_name, args = self.task_queue.get()
+            if event_name == 'SubTaskEncryptionCompleted':
+                # TODO：异常返回值处理 + 重加密者奖惩
+                # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
+                results = []
+                sub_task_id = args["subTaskId"]
+                ret = self.contract_interface.call_function(
+                    "getSubTaskFinalResult", sub_task_id
+                )
+                # 获取初始提交
+                results.append({"commit": ret[0], "filehash": ret[1]})
+                # 获取所有重加密结果
+                for encryption_result in ret[2]:
+                    results.append(
+                        {
+                            "commit": encryption_result[0],
+                            "filehash": encryption_result[1],
+                        }
+                    )
+
+                # 2. 从IPFS获取密文，并验证承诺
+                ciphertexts = []
+                for result in results:
+                    # 获取密文
+                    file = self.fetch_ipfs(result["filehash"])
+                    ciphertext = self.encryptor.createCiphertext(file)
+
+                    # 验证承诺
+                    commit = self._generate_commitment(ciphertext)
+                    if commit != result["commit"]:
+                        continue
+                    ciphertexts.append(ciphertext)
+
+                # 3.调用__verify_re_encryption验证重加密结果
+                verification_results = []
+                id_order = ret[3]
+                for i in range(1, len(ciphertexts)):
+                    valid = self.__verify_re_encryption(
+                        id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
+                    )
+                    verification_results.append(valid)
+                log.debug(
+                    f"【Requester】ZKP {sub_task_id} verification results {verification_results}"
+                )
+
+                # 4.调用__answer_collection解密重加密结果并保存
+                self.__answer_collection(sub_task_id, ciphertexts[0])
+            
+
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
-        pass
+        self.task_queue.put(("SubTaskAnswerSubmitted", args))
 
     def __handle_SubTaskEncryptionCompleted(self, raw_event, args):
-        # TODO：异常返回值处理 + 重加密者奖惩
-        # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
-        results = []
-        sub_task_id = args["subTaskId"]
-        ret = self.contract_interface.call_function(
-            "getSubTaskFinalResult", sub_task_id
-        )
-        # 获取初始提交
-        results.append({"commit": ret[0], "filehash": ret[1]})
-        # 获取所有重加密结果
-        for encryption_result in ret[2]:
-            results.append(
-                {
-                    "commit": encryption_result[0],
-                    "filehash": encryption_result[1],
-                }
-            )
-
-        # 2. 从IPFS获取密文，并验证承诺
-        ciphertexts = []
-        for result in results:
-            # 获取密文
-            file = self.fetch_ipfs(result["filehash"])
-            ciphertext = self.encryptor.createCiphertext(file)
-
-            # 验证承诺
-            commit = self._generate_commitment(ciphertext)
-            if commit != result["commit"]:
-                continue
-            ciphertexts.append(ciphertext)
-
-        # 3.调用__verify_re_encryption验证重加密结果
-        verification_results = []
-        id_order = ret[3]
-        for i in range(1, len(ciphertexts)):
-            valid = self.__verify_re_encryption(
-                id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
-            )
-            verification_results.append(valid)
-        log.debug(
-            f"【Requester】ZKP {sub_task_id} verification results {verification_results}"
-        )
-
-        # 4.调用__answer_collection解密重加密结果并保存
-        self.__answer_collection(sub_task_id, ciphertexts[0])
+        self.task_queue.put(("SubTaskEncryptionCompleted", args))
 
     def __verify_re_encryption(self, randomizer_id, ciphertext, new_ciphertext):
         def handler(conn):

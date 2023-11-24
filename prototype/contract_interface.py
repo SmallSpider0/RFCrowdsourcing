@@ -50,10 +50,13 @@ class ContractInterface:
         self.bc_private_key = bc_private_key
         self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
         self.transaction_queue = queue.LifoQueue()
+        self.sent_transaction_queue = queue.LifoQueue()
 
         # 启动独立进程串行发送交易
         threading.Thread(target=self.__trans_submission_daemon).start()
 
+        # 启动独立进程按顺序等待交易回执
+        threading.Thread(target=self.__receipt_handler_daemon).start()
 
     def send_transaction(self, function_name: str, *args, **kwargs):
         """
@@ -66,10 +69,18 @@ class ContractInterface:
         """
         self.transaction_queue.put((function_name, args, kwargs))
 
+    def __receipt_handler_daemon(self):
+        # 按交易发送顺序获取交易回执
+        while True:
+            function_name, txn_hash = self.sent_transaction_queue.get()
+            receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 20, 0.5)
+            if receipt.status != 1:
+                print(function_name, receipt)
+
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
         while True:
-            function_name, args, kwargs = self.transaction_queue.get()        
+            function_name, args, kwargs = self.transaction_queue.get()
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
             txn = func.build_transaction(
@@ -77,20 +88,16 @@ class ContractInterface:
                     "from": self.bc_account,
                     "nonce": self.bc_nonce,
                     "gas": 2000000,
-                    "gasPrice": self.web3.to_wei(10, 'gwei'),
+                    "gasPrice": 0,
                 }
             )
             # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
-            signed_txn = self.web3.eth.account.sign_transaction(txn, self.bc_private_key)
-            try:
-                txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-                time.sleep(0.1)
-                # receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 10, 2)
-                # if receipt.status != 1:
-                #     print(function_name, receipt)
-            except Exception as e:
-                print(f"Error sending transaction {function_name} {self.bc_account} {self.bc_nonce}: {e}")
-            self.bc_nonce +=1
+            signed_txn = self.web3.eth.account.sign_transaction(
+                txn, self.bc_private_key
+            )
+            txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            self.sent_transaction_queue.put((function_name, txn_hash))
+            self.bc_nonce += 1
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
@@ -116,26 +123,26 @@ class ContractInterface:
 
         :return: None
         """
+
+        def log_loop(event_filter, event_handler, poll_interval):
+            while True:
+                for event in event_filter.get_new_entries():
+                    event_handler(event, event["args"])
+                time.sleep(poll_interval)
+
         # 创建事件过滤器
         event_filter = getattr(self.contract.events, event_name).create_filter(
-            fromBlock="latest"
+            fromBlock="0x0"
         )
         if is_async:
             worker = Thread(
-                target=self.__log_loop,
+                target=log_loop,
                 args=(event_filter, event_handler, POLL_INTERVAL),
                 daemon=True,
             )
             worker.start()
         else:
-            self.__log_loop(event_filter, event_handler, POLL_INTERVAL)
-
-
-    def __log_loop(self, event_filter, event_handler, poll_interval):
-        while True:
-            for event in event_filter.get_new_entries():
-                event_handler(event, event["args"])
-            time.sleep(poll_interval)
+            self.log_loop(event_filter, event_handler, POLL_INTERVAL)
 
 
 if __name__ == "__main__":
@@ -156,18 +163,21 @@ if __name__ == "__main__":
         provider_url, contract_address, contract_abi, account, private_key
     )
 
-    # 监听事件
-    def handle_integer_received(raw_event, args):
-        print('IntegerReceived', args["value"])
+    for _ in range(100):
+        contract_interface.send_transaction("receiveInteger", 123)
+    print("done")
 
-    contract_interface.listen_for_events(
-        "IntegerReceived", handle_integer_received, is_async=True
-    )
+    # # 监听事件
+    # def handle_integer_received(raw_event, args):
+    #     print("IntegerReceived", args["value"])
 
-    time.sleep(1)
+    # contract_interface.listen_for_events(
+    #     "IntegerReceived", handle_integer_received, is_async=True
+    # )
 
-    contract_interface.send_transaction("receiveInteger", 123)
+    # time.sleep(1)
 
-    lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
-    print('lastReceivedInteger',lastReceivedInteger)
+    # contract_interface.send_transaction("receiveInteger", 123)
 
+    # lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
+    # print("lastReceivedInteger", lastReceivedInteger)
