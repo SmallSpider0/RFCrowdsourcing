@@ -1,5 +1,7 @@
 # mychain
 mychain/data*/geth/
+ipfs/data/*
+!ipfs/data/config
 
 # tmp
 tmp/
