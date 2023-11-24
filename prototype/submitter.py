@@ -63,7 +63,6 @@ class Submitter(BaseNode):
             if self.subtask == None:
                 break
             answer = self.subtask.execute()
-            log.debug(f"【Submitter】{self.id} answer generated: {str(answer)}")
             self.submit_answer(answer)
             log.debug(f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}")
 
@@ -82,10 +81,10 @@ class Submitter(BaseNode):
     # 提交回答（完成任务后调用）
     def submit_answer(self, answer):
         # 调用函数从回答中提取出内容，并加密和获取承诺
-        answer_cipher = self.encryptor.encrypt(int(str(answer)))
-        answer_commit = self._generate_commitment(answer_cipher)
+        answer_ciphers = self.encryptor.encrypt(answer.encode())
+        answer_commit = self._generate_commitment(answer_ciphers)
         # 上传区块链和IPFS
-        filehash = self.submit_ipfs(str(answer_cipher))
+        filehash = self.submit_ipfs([str(c) for c in answer_ciphers])
         self.__submit_commit(answer_commit, filehash)
 
     def __submit_commit(self, commit, filehash):

@@ -50,17 +50,21 @@ class ElgamalEncryptor:
         return ElGamal.Encrypt(self.pk, msg, alpha)
 
     # 用私钥解密
-    def decrypt(self, ciphertext):
+    def decrypt(self, ciphertexts):
         if self.sk is None:
             return False
-        return ElGamal.Decrypt(self.sk, ciphertext)
+        return ElGamal.Decrypt(self.sk, ciphertexts)
 
     # 用公钥重加密
-    def reEncrypt(self, ciphertext, alpha_prime=None):
+    def reEncrypt(self, ciphertexts, alpha_prime=None):
         if self.pk is None:
             return False
-        return ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime)
-
+        ret = []
+        # 对每个密文对象运行重加密
+        for ciphertext in ciphertexts:
+            ret.append(ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime))
+        return ret
+    
     def genAlpha(self):
         return ElGamal.genAlpha(self.pk.p)
 
@@ -84,18 +88,23 @@ class ElgamalEncryptor:
         return beta
 
     # 验证重加密交互式证明模拟器的模拟结果
-    def verifyReEncrypt(self, new_ciphertext, ciphertext, e_prime, c, beta):
-        # 模拟最终的验证过程
-        # 检查E(0, beta)是否等于c * e * e'
-        # 对于ElGamal密文，我们需要分别计算每个组件
-        e = new_ciphertext - ciphertext
-        tmp = self.encrypt(0, beta)
-        # 计算c * e * e' 的第一部分 (对应于ElGamal密文的cm)
-        e1 = (pow(e.cm, c, self.pk.p) * e_prime.cm) % self.pk.p
-        # 计算c * e * e' 的第二部分 (对应于ElGamal密文的cr)
-        e2 = (pow(e.cr, c, self.pk.p) * e_prime.cr) % self.pk.p
-        # 现在，我们将 E(0, beta) 的两部分与上面计算的两部分进行比较
-        return tmp.cm == e1 and tmp.cr == e2
+    def verifyReEncrypt(self, new_ciphertexts, ciphertexts, e_prime, c, beta):
+        if len(new_ciphertexts) != len(ciphertexts):
+            return False
+        for i in range(len(new_ciphertexts)):
+            # 模拟最终的验证过程
+            # 检查E(0, beta)是否等于c * e * e'
+            # 对于ElGamal密文，我们需要分别计算每个组件
+            e = new_ciphertexts[i] - ciphertexts[i]
+            tmp = self.encrypt(0, beta)
+            # 计算c * e * e' 的第一部分 (对应于ElGamal密文的cm)
+            e1 = (pow(e.cm, c, self.pk.p) * e_prime.cm) % self.pk.p
+            # 计算c * e * e' 的第二部分 (对应于ElGamal密文的cr)
+            e2 = (pow(e.cr, c, self.pk.p) * e_prime.cr) % self.pk.p
+            # 现在，我们将 E(0, beta) 的两部分与上面计算的两部分进行比较
+            if not tmp.cm == e1 and tmp.cr == e2:
+                return False
+        return True
 
 
 if __name__ == "__main__":
@@ -167,38 +176,39 @@ if __name__ == "__main__":
     # 功能测试
     def base_test(encryptor):
         # 1.加密
-        message_space = list(range(10000))
-        msg = 11
-        ciphertext = encryptor.encrypt(msg)
+        msg = 1234
+        ciphertexts = encryptor.encrypt(msg.to_bytes(8, byteorder='big', signed=True))
+        #print("Encrypted:", ciphertexts)
 
-        ciphertext_file = "tmp/ciphertext.pkl"
-        with open(ciphertext_file, "wb") as f:
-            pickle.dump(str(ciphertext), f)
-        print("Encrypted:", ciphertext)
+        # ciphertext_file = "tmp/ciphertext.pkl"
+        # with open(ciphertext_file, "wb") as f:
+        #     pickle.dump(str(ciphertexts), f)
 
-        # 2.重加密
+
+        # # 2.重加密
         alpha_prime = encryptor.genAlpha()
-        new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
-        print("Re_encrypted:", new_ciphertext)
+        new_ciphertexts = encryptor.reEncrypt(ciphertexts, alpha_prime)
+        #print("Re_encrypted:", new_ciphertexts)
 
-        # 3.同态性质
-        cipher_0 = new_ciphertext + ciphertext
+        # # 3.同态性质
+        # cipher_0 = new_ciphertexts[0] - ciphertexts[0]
 
-        # 4.解密
-        decrypted = encryptor.decrypt(ciphertext)
-        decrypted_re = encryptor.decrypt(new_ciphertext)
-        decrypted_ho = encryptor.decrypt(cipher_0)
-        print("Decrypted:", decrypted)
-        print("Decrypted_re:", decrypted_re)
-        print("Decrypted_ho:", decrypted_ho)
+        # # 4.解密
+        decrypted = encryptor.decrypt(ciphertexts)
+        #decrypted_re = encryptor.decrypt(new_ciphertexts)
+        print(decrypted)
+        # decrypted_ho = encryptor.decrypt(cipher_0)
+        print("Decrypted:", int.from_bytes(decrypted, byteorder='big', signed=True))
+        #print("Decrypted_re:", list(decrypted_re))
+        # print("Decrypted_ho:", decrypted_ho)
 
-        # 5.重加密证明
+        # # 5.重加密证明
         e_prime, alpha_tmp = encryptor.proveReEncrypt_1()  # 证明者发送e_prime，并保存alpha_tmp
         c = encryptor.proveReEncrypt_2()  # 验证者发送一个挑战c
         beta = encryptor.proveReEncrypt_3(c, alpha_prime, alpha_tmp)  # 证明者发送beta
         valid = encryptor.verifyReEncrypt(
-            new_ciphertext, ciphertext, e_prime, c, beta
+            new_ciphertexts, ciphertexts, e_prime, c, beta
         )  # 验证者验证上述交互内容，判断重加密是否正确
         print(f"Reencryption Proof Valid: {valid}")
 
-    homo_test(encryptor)
+    base_test(encryptor)

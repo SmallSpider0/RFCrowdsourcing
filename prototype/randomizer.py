@@ -142,17 +142,17 @@ class Randomizer(BaseNode):
     def __perform_re_encryption(self, task_id, filehash):
         # 1.根据智能合约中存储的pointer，从分布式文件存储服务下载回答密文
         file = self.fetch_ipfs(filehash)
-        ciphertext = self.encryptor.createCiphertext(file)
+        ciphertexts = [self.encryptor.createCiphertext(c) for c in file]
 
         # 2.进行重加密
         alpha_prime = self.encryptor.genAlpha()
-        new_ciphertext = self.encryptor.reEncrypt(ciphertext, alpha_prime)
+        new_ciphertexts = self.encryptor.reEncrypt(ciphertexts, alpha_prime)
 
         # 3.提交重加密结果
-        file_hash = self.submit_ipfs(str(new_ciphertext))
+        file_hash = self.submit_ipfs([str(c) for c in new_ciphertexts])
 
         # 4.在本地保存一份结果 用于后续验证
-        commit = self._generate_commitment(new_ciphertext)
+        commit = self._generate_commitment(new_ciphertexts)
         self.old_alpha_primes[commit] = alpha_prime
 
         # 5.将重加密结果的承诺和文件指针上传至区块链

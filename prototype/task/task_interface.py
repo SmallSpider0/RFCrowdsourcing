@@ -7,14 +7,14 @@ class AnswerInterface(ABC):
         pass
 
     @abstractmethod
-    def __str__(self):
-        '''将回答转为字符串'''
+    def encode(self):
+        '''将回答转为bytearray'''
         pass
 
     @classmethod
     @abstractmethod
-    def from_str(cls, s):
-        '''从字符串初始化Answer对象'''
+    def from_encoding(cls, s):
+        '''从bytearray还原回答'''
         pass
 
     @classmethod

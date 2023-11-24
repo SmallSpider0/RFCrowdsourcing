@@ -116,12 +116,95 @@ def find_prime(iNumBits, iConfidence):
         if SS(p, iConfidence):
             return p
 
+
+# encodes bytes to integers mod p.  reads bytes from file
+def encode(byte_array: bytearray, iNumBits) -> list:
+    # z is the array of integers mod p
+    z = []
+
+    # each encoded integer will be a linear combination of k message bytes
+    # k must be the number of bits in the prime divided by 8 because each
+    # message byte is 8 bits long
+    k = iNumBits // 8
+
+    # j marks the jth encoded integer
+    # j will start at 0 but make it -k because j will be incremented during first iteration
+    j = -1 * k
+    # num is the summation of the message bytes
+    num = 0
+    # i iterates through byte array
+    for i in range(len(byte_array)):
+        # if i is divisible by k, start a new encoded integer
+        if i % k == 0:
+            j += k
+            num = 0
+            z.append(0)
+        # add the byte multiplied by 2 raised to a multiple of 8
+        z[j // k] += byte_array[i] * (2 ** (8 * (i % k)))
+
+    # example
+    # if n = 24, k = n / 8 = 3
+    # z[0] = (summation from i = 0 to i = k)m[i]*(2^(8*i))
+    # where m[i] is the ith message byte
+
+    # return array of encoded integers
+    return z
+
+
+# decodes integers to the original message bytes
+def decode(aiPlaintext, iNumBits) -> bytearray:
+    # bytes array will hold the decoded original message bytes
+    bytes_array = []
+
+    # same deal as in the encode function.
+    # each encoded integer is a linear combination of k message bytes
+    # k must be the number of bits in the prime divided by 8 because each
+    # message byte is 8 bits long
+    k = iNumBits // 8
+
+    # num is an integer in list aiPlaintext
+    for num in aiPlaintext:
+        # get the k message bytes from the integer, i counts from 0 to k-1
+        for i in range(k):
+            # temporary integer
+            temp = num
+            # j goes from i+1 to k-1
+            for j in range(i + 1, k):
+                # get remainder from dividing integer by 2^(8*j)
+                temp = temp % (2 ** (8 * j))
+            # message byte representing a letter is equal to temp divided by 2^(8*i)
+            letter = temp // (2 ** (8 * i))
+            # add the message byte letter to the byte array
+            bytes_array.append(letter)
+            # subtract the letter multiplied by the power of two from num so
+            # so the next message byte can be found
+            num = num - (letter * (2 ** (8 * i)))
+
+    # example
+    # if "You" were encoded.
+    # Letter        #ASCII
+    # Y              89
+    # o              111
+    # u              117
+    # if the encoded integer is 7696217 and k = 3
+    # m[0] = 7696217 % 256 % 65536 / (2^(8*0)) = 89 = 'Y'
+    # 7696217 - (89 * (2^(8*0))) = 7696128
+    # m[1] = 7696128 % 65536 / (2^(8*1)) = 111 = 'o'
+    # 7696128 - (111 * (2^(8*1))) = 7667712
+    # m[2] = 7667712 / (2^(8*2)) = 117 = 'u'
+
+    decoded_bytearray = bytearray(b for b in bytes_array)
+
+    return decoded_bytearray
+
+
 class ElGamal:
     class PrivateKey:
-        def __init__(self, p=None, g=None, x=None):
+        def __init__(self, p=None, g=None, x=None, iNumBits=None):
             self.p = p
             self.g = g
             self.x = x
+            self.iNumBits = iNumBits
 
         def __repr__(self):
             return f"ElGamal.PrivateKey(p={self.p}, g={self.g}, x={self.x})"
@@ -130,18 +213,21 @@ class ElGamal:
             return self.p == pk.p and self.g == pk.g and self.x == pk.x
 
         def __str__(self):
-            return json.dumps({"p": self.p, "g": self.g, "x": self.x})
+            return json.dumps(
+                {"p": self.p, "g": self.g, "x": self.x, "iNumBits": self.iNumBits}
+            )
 
         @classmethod
         def from_str(cls, s):
             obj = json.loads(s)
-            return cls(obj["p"], obj["g"], obj["x"])
+            return cls(obj["p"], obj["g"], obj["x"], obj["iNumBits"])
 
     class PublicKey:
-        def __init__(self, p=None, g=None, h=None):
+        def __init__(self, p=None, g=None, h=None, iNumBits=None):
             self.p = p
             self.g = g
             self.h = h
+            self.iNumBits = iNumBits
 
         def __repr__(self):
             return f"ElGamal.PublicKey(p={self.p}, g={self.g}, h={self.h})"
@@ -150,12 +236,14 @@ class ElGamal:
             return self.p == pk.p and self.g == pk.g and self.h == pk.h
 
         def __str__(self):
-            return json.dumps({"p": self.p, "g": self.g, "h": self.h})
+            return json.dumps(
+                {"p": self.p, "g": self.g, "h": self.h, "iNumBits": self.iNumBits}
+            )
 
         @classmethod
         def from_str(cls, s):
             obj = json.loads(s)
-            return cls(obj["p"], obj["g"], obj["h"])
+            return cls(obj["p"], obj["g"], obj["h"], obj["iNumBits"])
 
     class Ciphertext:
         def __init__(self, cm, cr, pk):
@@ -215,7 +303,7 @@ class ElGamal:
             return cls(obj["cm"], obj["cr"], pk)
 
     @classmethod
-    def KeyGen(cls, iNumBits=512 , iConfidence=32):
+    def KeyGen(cls, iNumBits=512, iConfidence=32):
         # p is the prime
         # g is the primitve root
         # x is random in (0, p-1) inclusive
@@ -225,23 +313,48 @@ class ElGamal:
         g = pow(g, 2, p)
         x = random.randint(1, (p - 1) // 2)
         h = pow(g, x, p)
-        return (ElGamal.PublicKey(p, g, h), ElGamal.PrivateKey(p, g, x))
+        return (
+            ElGamal.PublicKey(p, g, h, iNumBits),
+            ElGamal.PrivateKey(p, g, x, iNumBits),
+        )
 
     @classmethod
     def Encrypt(cls, pk, m, alpha=None):
-        if alpha is None:
-            alpha = cls.genAlpha(pk.p)
-        cm = m * pow(pk.h, alpha, pk.p) % pk.p
-        cr = pow(pk.g, alpha, pk.p)
-        return ElGamal.Ciphertext(cm, cr, pk)
+        if type(m) == int:
+            if alpha is None:
+                alpha = cls.genAlpha(pk.p)
+            cm = m * pow(pk.h, alpha, pk.p) % pk.p
+            cr = pow(pk.g, alpha, pk.p)
+            return ElGamal.Ciphertext(cm, cr, pk)
+        else:
+            z = encode(m, pk.iNumBits)
+            ret = []
+            for i in z:
+                if alpha is None:
+                    alpha = cls.genAlpha(pk.p)
+                cm = i * pow(pk.h, alpha, pk.p) % pk.p
+                cr = pow(pk.g, alpha, pk.p)
+                ret.append(ElGamal.Ciphertext(cm, cr, pk))
+            return ret
 
     @classmethod
-    def Decrypt(cls, sk, c):
-        # s = cr^x mod p
-        s = pow(c.cr, sk.x, sk.p)
-        # plaintext integer = cm*s^-1 mod p
-        plain = (c.cm * pow(s, sk.p - 2, sk.p)) % sk.p
-        return plain
+    def Decrypt(cls, sk, ciphertexts):
+        if type(ciphertexts) == ElGamal.Ciphertext:
+            # s = cr^x mod p
+            s = pow(c.cr, sk.x, sk.p)
+            # plaintext integer = cm*s^-1 mod p
+            plain_int = (c.cm * pow(s, sk.p - 2, sk.p)) % sk.p
+            return plain_int
+        else:
+            z = []
+            for c in ciphertexts:
+                # s = cr^x mod p
+                s = pow(c.cr, sk.x, sk.p)
+                # plaintext integer = cm*s^-1 mod p
+                z.append((c.cm * pow(s, sk.p - 2, sk.p)) % sk.p) 
+            decrypted = decode(z, sk.iNumBits)
+            # 删除末尾的\x00
+            return decrypted.rstrip(b"\x00")
 
     @classmethod
     def ReEncrypt(cls, pk, ciphertext, alpha_prime=None):

@@ -17,19 +17,19 @@ import time
 
 class SimpleAnswer(AnswerInterface):
     """任务回答"""
-    def __init__(self, content):
+    def __init__(self, content: int):
         self.content = content
 
     def validate(self):
         # 对答案内容进行简单的有效性检查
         return isinstance(self.content, int)
 
-    def __str__(self):
-        return str(self.content)
+    def encode(self):
+        return bytearray(self.content.to_bytes(8, byteorder='big', signed=True))
 
     @classmethod
-    def from_str(cls, s):
-        content = int(s)
+    def from_encoding(cls, encoded):
+        content = int.from_bytes(encoded, byteorder='big', signed=True)
         return cls(content)
 
     @classmethod
@@ -137,4 +137,9 @@ if __name__ == "__main__":
         print(indexes)
         print(str(answer))
 
-    test_simple_task()
+    # test_simple_task()
+    ans = SimpleAnswer(2333)
+    print(ans.content)
+    encoded = ans.encode()
+    decoded = SimpleAnswer.from_encoding(encoded)
+    print(decoded.content)

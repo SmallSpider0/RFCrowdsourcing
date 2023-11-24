@@ -110,24 +110,24 @@ class Requester(BaseNode):
                     )
 
                 # 2. 从IPFS获取密文，并验证承诺
-                ciphertexts = []
+                ciphertext_list = []
                 for result in results:
                     # 获取密文
                     file = self.fetch_ipfs(result["filehash"])
-                    ciphertext = self.encryptor.createCiphertext(file)
+                    ciphertexts = [self.encryptor.createCiphertext(c) for c in file]
 
                     # 验证承诺
-                    commit = self._generate_commitment(ciphertext)
+                    commit = self._generate_commitment(ciphertexts)
                     if commit != result["commit"]:
                         continue
-                    ciphertexts.append(ciphertext)
+                    ciphertext_list.append(ciphertexts)
 
                 # 3.调用__verify_re_encryption验证重加密结果
                 verification_results = []
                 id_order = ret[3]
-                for i in range(1, len(ciphertexts)):
+                for i in range(1, len(ciphertext_list)):
                     valid = self.__verify_re_encryption(
-                        id_order[i - 1], ciphertexts[i - 1], ciphertexts[i]
+                        id_order[i - 1], ciphertext_list[i - 1], ciphertext_list[i]
                     )
                     verification_results.append(valid)
                 log.debug(
@@ -135,7 +135,7 @@ class Requester(BaseNode):
                 )
 
                 # 4.调用__answer_collection解密重加密结果并保存
-                self.__answer_collection(sub_task_id, ciphertexts[0])
+                self.__answer_collection(sub_task_id, ciphertext_list[0])
             
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
@@ -171,14 +171,14 @@ class Requester(BaseNode):
         return valid
 
     # 解密提交并保存，供后续奖励发放模块处理
-    def __answer_collection(self, subTaskId, ciphertext):
+    def __answer_collection(self, subTaskId, ciphertexts):
         # 1.使用自己的私钥解密submissions中的回答
-        ans_content = self.encryptor.decrypt(ciphertext)
-        answer_obj = self.task.ANSWER_CLS(ans_content)
+        ans_content = self.encryptor.decrypt(ciphertexts)
+        answer_obj = self.task.ANSWER_CLS.from_encoding(ans_content)
 
         # 2.将解密结果放入队列，供后续处理
         self.answers_of_subtasks.put((subTaskId, answer_obj))
-        log.debug(f"【Requester】results {subTaskId} decrypted {ans_content}")
+        log.debug(f"【Requester】results {subTaskId} decrypted {answer_obj.content}")
 
     # 奖励发放器守护进程，评估结果并处理奖励发放相关事宜
     # TODO：完成随机延迟的奖励发放

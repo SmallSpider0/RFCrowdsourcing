@@ -57,7 +57,7 @@ class ContractInterface:
         threading.Thread(target=self.__trans_submission_daemon).start()
 
         # 启动独立线程按顺序等待交易回执
-        threading.Thread(target=self.__receipt_handler_daemon).start()
+        # threading.Thread(target=self.__receipt_handler_daemon).start()
 
     def send_transaction(self, function_name: str, *args, **kwargs):
         """
@@ -74,9 +74,12 @@ class ContractInterface:
         # 按交易发送顺序获取交易回执
         while True:
             function_name, txn_hash = self.sent_transaction_queue.get()
-            receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 20, 0.5)
-            if receipt.status != 1:
-                print(function_name, receipt)
+            try:
+                receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 20, 0.5)
+                if receipt.status != 1:
+                    print(function_name, receipt)
+            except:
+                print(function_name)
 
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
@@ -106,7 +109,7 @@ class ContractInterface:
                 txn, self.bc_private_key
             )
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-            self.sent_transaction_queue.put((function_name, txn_hash))
+            # self.sent_transaction_queue.put((function_name, txn_hash))
             self.bc_nonce += 1
             last_tran_time = time.time()
 

@@ -9,21 +9,23 @@ web3_url = config.get_config("app").get("web3_url")
 # contract_address = config.get_config("smart_contract").get("address")
 # contract_abi_path = config.get_config("smart_contract").get("abi_path")
 
-
+# # 大规模测试
 # SUBMITTER_NUM = 100 #提交者数量
 # RANDOMIZER_NUM = 20 #重加密者数量
 # SUBTASK_NUM = 100 #子任务数量
 # RE_ENC_NUM = 3 #子任务需要的重加密次数
 
-# SUBMITTER_NUM = 10 #提交者数量
-# RANDOMIZER_NUM = 10 #重加密者数量
-# SUBTASK_NUM = 50 #子任务数量
-# RE_ENC_NUM = 3 #子任务需要的重加密次数
+# 标准测试
+SUBMITTER_NUM = 5 #提交者数量
+RANDOMIZER_NUM = 10 #重加密者数量
+SUBTASK_NUM = 50 #子任务数量
+RE_ENC_NUM = 3 #子任务需要的重加密次数
 
-SUBMITTER_NUM = 2 #提交者数量
-RANDOMIZER_NUM = 20 #重加密者数量
-SUBTASK_NUM = 10 #子任务数量
-RE_ENC_NUM = 10 #子任务需要的重加密次数
+# # 最小系统
+# SUBMITTER_NUM = 1 #提交者数量
+# RANDOMIZER_NUM = 1 #重加密者数量
+# SUBTASK_NUM = 10 #子任务数量
+# RE_ENC_NUM = 1 #子任务需要的重加密次数
 
 
 import json
@@ -156,6 +158,3 @@ for submitter in submitters:
 
 # TODO：实现一个测试客户端，控制这些节点进行实验
 # TODO：实现CIFAR10标记任务
-
-# 原因似乎是 交易池超过上限？导致交易没有成功发送
-# 如何判断交易是否被成功发送？

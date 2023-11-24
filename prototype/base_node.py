@@ -76,10 +76,10 @@ class BaseNode(Process):
         return file_hash
 
     # 生成数据的承诺，这里用sha256哈希作为例子
-    def _generate_commitment(self, *args):
+    def _generate_commitment(self, contents):
         tmp = ""
-        for arg in args:
-            tmp += str(arg)
+        for content in contents:
+            tmp += str(content)
         # 创建哈希对象
         hash_obj = hashlib.new("sha256")
         # 更新哈希对象，这里需要确保数据是字节串
