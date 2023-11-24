@@ -51,11 +51,12 @@ class ContractInterface:
         self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
         self.transaction_queue = queue.LifoQueue()
         self.sent_transaction_queue = queue.LifoQueue()
+        self.total_gas_cost = 0
 
-        # 启动独立进程串行发送交易
+        # 启动独立线程串行发送交易
         threading.Thread(target=self.__trans_submission_daemon).start()
 
-        # 启动独立进程按顺序等待交易回执
+        # 启动独立线程按顺序等待交易回执
         threading.Thread(target=self.__receipt_handler_daemon).start()
 
     def send_transaction(self, function_name: str, *args, **kwargs):
@@ -79,18 +80,27 @@ class ContractInterface:
 
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
+        last_tran_time = 0
         while True:
+            # 获取下一个待发送的交易
             function_name, args, kwargs = self.transaction_queue.get()
+
+            # 延时 防止交易发送过快
+            trans_interval = time.time() - last_tran_time
+            if trans_interval < 0.5:
+                time.sleep(0.5 - trans_interval)
+
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
             txn = func.build_transaction(
                 {
                     "from": self.bc_account,
                     "nonce": self.bc_nonce,
-                    "gas": 2000000,
                     "gasPrice": 0,
                 }
             )
+            # 记录总gas开销
+            self.total_gas_cost += txn["gas"]
             # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
             signed_txn = self.web3.eth.account.sign_transaction(
                 txn, self.bc_private_key
@@ -98,6 +108,7 @@ class ContractInterface:
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
             self.sent_transaction_queue.put((function_name, txn_hash))
             self.bc_nonce += 1
+            last_tran_time = time.time()
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
@@ -163,21 +174,17 @@ if __name__ == "__main__":
         provider_url, contract_address, contract_abi, account, private_key
     )
 
-    for _ in range(100):
-        contract_interface.send_transaction("receiveInteger", 123)
-    print("done")
+    # 监听事件
+    def handle_integer_received(raw_event, args):
+        print("IntegerReceived", args["value"])
 
-    # # 监听事件
-    # def handle_integer_received(raw_event, args):
-    #     print("IntegerReceived", args["value"])
+    contract_interface.listen_for_events(
+        "IntegerReceived", handle_integer_received, is_async=True
+    )
 
-    # contract_interface.listen_for_events(
-    #     "IntegerReceived", handle_integer_received, is_async=True
-    # )
+    time.sleep(1)
 
-    # time.sleep(1)
+    contract_interface.send_transaction("receiveInteger", 123)
 
-    # contract_interface.send_transaction("receiveInteger", 123)
-
-    # lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
-    # print("lastReceivedInteger", lastReceivedInteger)
+    lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
+    print("lastReceivedInteger", lastReceivedInteger)

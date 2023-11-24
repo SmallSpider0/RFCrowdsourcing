@@ -9,16 +9,21 @@ web3_url = config.get_config("app").get("web3_url")
 # contract_address = config.get_config("smart_contract").get("address")
 # contract_abi_path = config.get_config("smart_contract").get("abi_path")
 
-# 给节点分配秘钥
-SUBMITTER_NUM = 10 #提交者数量
+
+# SUBMITTER_NUM = 100 #提交者数量
+# RANDOMIZER_NUM = 20 #重加密者数量
+# SUBTASK_NUM = 100 #子任务数量
+# RE_ENC_NUM = 3 #子任务需要的重加密次数
+
+# SUBMITTER_NUM = 10 #提交者数量
+# RANDOMIZER_NUM = 10 #重加密者数量
+# SUBTASK_NUM = 50 #子任务数量
+# RE_ENC_NUM = 3 #子任务需要的重加密次数
+
+SUBMITTER_NUM = 2 #提交者数量
 RANDOMIZER_NUM = 20 #重加密者数量
 SUBTASK_NUM = 10 #子任务数量
-RE_ENC_NUM = 3 #子任务需要的重加密次数
-
-# SUBMITTER_NUM = 2 #提交者数量
-# RANDOMIZER_NUM = 5 #重加密者数量
-# SUBTASK_NUM = 10 #子任务数量
-# RE_ENC_NUM = 3 #子任务需要的重加密次数
+RE_ENC_NUM = 10 #子任务需要的重加密次数
 
 
 import json
