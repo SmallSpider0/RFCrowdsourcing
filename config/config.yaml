@@ -15,6 +15,14 @@ app:
 test:
   account_path: "config/bc_keys.json"
 
+requester:
+  # 提供子任务获取的端口
+  task_pull_port: 10000
+
+randomizer:
+  # 提供ZKP交互式验证的端口
+  proving_server_port_base: 11000
+
 smart_contract:
   # 【合约地址】：系统中使用的合约地址（本地部署）
   address: "0xBC653A8d353F7D93844e5d94BD99aC93f4Ef588B"

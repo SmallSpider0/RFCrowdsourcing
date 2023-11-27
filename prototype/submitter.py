@@ -59,7 +59,7 @@ class Submitter(BaseNode):
     def __main_loop(self):
         while True:
             self.subtask = self.pull_task()
-            log.debug(f"【Submitter】{self.id} task received: {str(self.subtask)}")
+            log.debug(f"【Submitter】{self.id} task received")
             if self.subtask == None:
                 break
             answer = self.subtask.execute()

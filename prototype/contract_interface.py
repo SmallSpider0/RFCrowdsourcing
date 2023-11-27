@@ -58,9 +58,6 @@ class ContractInterface:
         # 启动独立线程串行发送交易
         threading.Thread(target=self.__trans_submission_daemon).start()
 
-        # 启动独立线程按顺序等待交易回执
-        # threading.Thread(target=self.__receipt_handler_daemon).start()
-
     def send_transaction(self, function_name: str, *args, **kwargs):
         """
         Sends a transaction to a specified function of the smart contract.
@@ -90,11 +87,6 @@ class ContractInterface:
             # 获取下一个待发送的交易
             function_name, args, kwargs = self.transaction_queue.get()
 
-            # 延时 防止交易发送过快
-            # trans_interval = time.time() - last_tran_time
-            # if trans_interval < 0.5:
-            #     time.sleep(0.5 - trans_interval)
-
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
             txn = func.build_transaction(
@@ -111,9 +103,7 @@ class ContractInterface:
                 txn, self.bc_private_key
             )
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-            # self.sent_transaction_queue.put((function_name, txn_hash))
             self.bc_nonce += 1
-            # last_tran_time = time.time()
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
