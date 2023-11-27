@@ -5,10 +5,19 @@ envs/logs
 !envs/ipfs/data/config
 
 # tmp
-tmp/
-solidity/artifacts
-.DS_Store
 test.py
+tmp/*
+!tmp/.gitkeep
+!tmp/IPFS_downloads/.gitkeep
+!tmp/IPFS_uploads/.gitkeep
+!tmp/keypairs/.gitkeep
+!tmp/.gitkeep
+
+# macos
+.DS_Store
+
+# solidity
+solidity/artifacts
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
