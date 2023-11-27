@@ -1,4 +1,4 @@
-./geth \
+nohup ./geth \
     --port "30303" \
     --datadir ./data1  \
     --networkid 7777 \
@@ -8,4 +8,5 @@
     --miner.etherbase "0x9A82f98d6083c30632A22a9e93a9dfA8B054C929" \
     --mine --allow-insecure-unlock  \
     --unlock "0x9A82f98d6083c30632A22a9e93a9dfA8B054C929" \
-    --password "./tmp/password.txt"
+    --password "./tmp/password.txt" \
+    > ../logs/bc_node1 2>&1 &

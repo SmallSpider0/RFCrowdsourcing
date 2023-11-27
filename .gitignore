@@ -1,7 +1,8 @@
 # mychain
-mychain/data*/geth/
-ipfs/data/*
-!ipfs/data/config
+envs/mychain/data*/geth/
+envs/ipfs/data/*
+envs/logs
+!envs/ipfs/data/config
 
 # tmp
 tmp/
