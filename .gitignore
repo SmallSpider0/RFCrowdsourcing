@@ -1,7 +1,8 @@
-# mychain
+# mychain / ipfs
 envs/mychain/data*/geth/
 envs/ipfs/data/*
-envs/logs
+envs/logs/*
+!envs/logs/.gitkeep
 !envs/ipfs/data/config
 
 # tmp
