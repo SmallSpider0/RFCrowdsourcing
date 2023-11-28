@@ -51,12 +51,8 @@ class SimpleSubtask(SubTaskInterface):
     def execute(self):
         """执行单个子任务"""
         time.sleep(0.5)  # 模拟操作时间
-        ret = sum(self.content)  # 这里简单的求和为例
+        ret = len(self.content)  # 这里简单的求和为例
         return SimpleAnswer(ret)
-
-    def get_id(self):
-        """获取子任务在主任务中的唯一ID"""
-        return self.id
 
     def __str__(self):
         return json.dumps(

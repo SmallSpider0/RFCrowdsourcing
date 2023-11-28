@@ -93,7 +93,7 @@ class Submitter(BaseNode):
         vrf_output = random.randint(1, 1000)
         self.contract_interface.send_transaction(
             "submitSubTaskAnswer",
-            self.subtask.get_id(),
+            self.subtask.id,
             commit,
             filehash,
             vrf_output

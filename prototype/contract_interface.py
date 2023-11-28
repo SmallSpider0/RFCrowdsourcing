@@ -82,7 +82,6 @@ class ContractInterface:
 
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
-        # last_tran_time = 0
         while True:
             # 获取下一个待发送的交易
             function_name, args, kwargs = self.transaction_queue.get()

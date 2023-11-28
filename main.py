@@ -2,7 +2,8 @@ from prototype.utils.config import Config
 from prototype.requester import Requester
 from prototype.submitter import Submitter
 from prototype.randomizer import Randomizer
-from prototype.task.simple_task import SimpleTask, SimpleSubtask
+from prototype.task.cifar10_tagging import CIFAR10Task
+from prototype.task.simple_task import SimpleTask
 from prototype.utils.tools import deploy_smart_contract
 
 # 系统库
@@ -80,9 +81,10 @@ contract_address, contract_abi = deploy_smart_contract(
 )
 
 # ------------------
-# 3.初始化 requester
+# 3.初始化 requester和任务
 # ------------------
-task = SimpleTask("This is a simple task", list(range(1, 1001)), SUBTASK_NUM)
+# task = SimpleTask("This is a simple task", list(range(1, 1001)), SUBTASK_NUM)
+task = CIFAR10Task("CIFAR10 tagging", SUBTASK_NUM)
 requester = Requester(
     ipfs_url,
     web3_url,
@@ -132,7 +134,7 @@ for id in range(SUBMITTER_NUM):
             "tmp/keypairs/pk.pkl",
             REQUESTER_TASK_PULL_IP,
             REQUESTER_TASK_PULL_PORT,
-            SimpleSubtask,
+            task.SUBTASK_CLS,
             id,
         )
     )
@@ -155,5 +157,3 @@ time.sleep(20)
 # 启动
 for submitter in submitters:
     submitter.run()
-
-# TODO：实现一个测试客户端，控制这些节点进行实验

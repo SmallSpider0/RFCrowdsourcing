@@ -34,11 +34,6 @@ class SubTaskInterface(ABC):
         '''将任务转为字符串'''
         pass
 
-    @abstractmethod
-    def get_id(self):
-        '''获取子任务在主任务中的唯一ID'''
-        pass
-
     @classmethod
     @abstractmethod
     def from_str(cls, s):

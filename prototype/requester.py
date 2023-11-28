@@ -178,7 +178,7 @@ class Requester(BaseNode):
 
         # 2.将解密结果放入队列，供后续处理
         self.answers_of_subtasks.put((subTaskId, answer_obj))
-        log.debug(f"【Requester】results {subTaskId} decrypted {answer_obj.content}")
+        log.debug(f"【Requester】results {subTaskId} decrypted")
 
     # 奖励发放器守护进程，评估结果并处理奖励发放相关事宜
     # TODO：完成随机延迟的奖励发放
