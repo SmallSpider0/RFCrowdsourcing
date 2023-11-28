@@ -35,7 +35,6 @@ class EvalGasCost:
         if instruction == "event/TASK_END":
             print("event/TASK_END")
             self.__collect_gas_cost()
-            self.system.stop()
 
     def __collect_gas_cost(self):
         gas_requester = self.system.call_requester("get/gas_cost")

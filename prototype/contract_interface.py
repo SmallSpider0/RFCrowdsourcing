@@ -21,6 +21,7 @@ import queue
 
 POLL_INTERVAL = config.get_config("smart_contract").get("poll_interval")
 
+
 class ContractInterface:
     def __init__(
         self,
@@ -41,7 +42,7 @@ class ContractInterface:
         """
         # 合约相关参数
         self.web3 = Web3(Web3.HTTPProvider(provider_url))
-        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0) # 兼容POA
+        self.web3.middleware_onion.inject(geth_poa_middleware, layer=0)  # 兼容POA
         self.contract = self.web3.eth.contract(
             address=contract_address, abi=contract_abi
         )
@@ -60,7 +61,7 @@ class ContractInterface:
         # 启动独立线程等待交易回执
         threading.Thread(target=self.__receipt_handler_daemon).start()
 
-    def send_transaction_receipt(self, callback, function_name: str,  *args, **kwargs):
+    def send_transaction_receipt(self, callback, function_name: str, *args, **kwargs):
         """
         Sends a transaction to a specified function of the smart contract.
 
@@ -203,6 +204,7 @@ if __name__ == "__main__":
     # 发送交易 并获取回执
     def callback(function_name, receipt):
         print(function_name, receipt)
+
     contract_interface.send_transaction_receipt(callback, "receiveInteger", 123)
 
     lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")

@@ -21,7 +21,7 @@ import random
 import threading
 from prototype.utils.config import Config
 
-
+# TODO：实现自动远程部署（本地测试使用命令行开启新的进程实现）
 class SystemInterface:
     def __init__(
         self,
