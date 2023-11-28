@@ -48,7 +48,6 @@ class CIFAR10Answer(AnswerInterface):
         cnt = 0
         for ans in answers:
             cnt += len(ans.content)
-            print(len(ans.content))
         return f"{cnt} tags"
 
 

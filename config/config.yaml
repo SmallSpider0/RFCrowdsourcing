@@ -6,22 +6,42 @@ app:
   # 【日志服务器】：用服务器收集各节点的日志（暂未实现）
   logserver: 127.0.0.1:1234
   # 【日志级别】：debug、info、error
-  loglevel: debug
+  loglevel: info
   # 【IPFS服务url】：本地私有部署IPFS
   ipfs_url: /ip4/127.0.0.1/tcp/5001
   # 【web3服务url】：HTTP接口地址
   web3_url: http://127.0.0.1:8545
-
-test:
+  # 测试账户地址
   account_path: "config/bc_keys.json"
 
+# 实验时用于控制系统的的客户端
+client:
+  # 【ip】：节点所在的ip
+  ip: "localhost"
+  # 【服务端口】：用于实验时获取数据的服务端口
+  serving_port: 20000
+
 requester:
-  # 提供子任务获取的端口
+  # 【ip】：节点所在的ip
+  ip: "localhost"
+  # 【任务获取端口】：提供子任务获取的端口
   task_pull_port: 10000
+  # 【服务端口】：用于实验时获取数据的服务端口
+  serving_port: 20000
 
 randomizer:
-  # 提供ZKP交互式验证的端口
+  # 【ip】：节点所在的ip
+  ip: "localhost"
+  # 【ZKP验证端口】：提供ZKP交互式验证的端口
   proving_server_port_base: 11000
+  # 【服务端口】：用于实验时获取数据的服务端口
+  serving_port_base: 13000
+
+submitter:
+  # 【ip】：节点所在的ip
+  ip: "localhost"
+  # 【服务端口】：用于实验时获取数据的服务端口
+  serving_port_base: 14000
 
 smart_contract:
   # 【合约地址】：系统中使用的合约地址（本地部署）

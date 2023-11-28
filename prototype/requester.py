@@ -22,6 +22,9 @@ class Requester(BaseNode):
     # 构造函数
     def __init__(
         self,
+        client_port,
+        client_ip,
+        serving_port,
         ipfs_url,
         provider_url,
         contract_address,
@@ -44,6 +47,9 @@ class Requester(BaseNode):
 
         # 基类初始化
         super().__init__(
+            client_port,
+            client_ip,
+            serving_port,
             ipfs_url,
             provider_url,
             contract_address,
@@ -54,8 +60,27 @@ class Requester(BaseNode):
             requester_sk_file,
         )
 
+    # 外部控制接口启动
+    def _server_start(self):
+        # 启动功能
+        self.daemon_start()
+
+        # 服务器功能定义
+        def server(conn, addr):
+            instruction = recvLine(conn)
+            if instruction == "get/gas_cost":
+                sendLine(conn, self.contract_interface.total_gas_cost)
+            conn.close()
+
+        # 启动服务器
+        threading.Thread(
+            target=listen_on_port,
+            args=(server, self.serving_port),
+        ).start()
+        log.info(f"【Requester】serving started")
+
     # 启动守护程序
-    def _daemon_start(self):
+    def daemon_start(self):
         # 1.启动监听器，监听特定事件
         # 调用getSubTaskFinalResult收集回答（全部重加密结果 文件hash+承诺）并处理
         self.contract_interface.listen_for_events(
@@ -79,8 +104,6 @@ class Requester(BaseNode):
         # 4.启动奖励发放器，执行随机延迟的奖励发放
         threading.Thread(target=self.__reward_dist_daemon).start()
 
-        log.info(f"【Requester】started")
-
     def __task_pull_server(self, conn, addr):
         # 生成一个新的task 并返回
         # 如果没有新的subtask了则返回None
@@ -90,7 +113,7 @@ class Requester(BaseNode):
     def __task_handler_daemon(self):
         while True:
             event_name, args = self.task_queue.get()
-            if event_name == 'SubTaskEncryptionCompleted':
+            if event_name == "SubTaskEncryptionCompleted":
                 # TODO：异常返回值处理 + 重加密者奖惩
                 # 1.从合约获取以完成任务的 提交+全部重加密结果文件哈希和承诺
                 results = []
@@ -136,7 +159,6 @@ class Requester(BaseNode):
 
                 # 4.调用__answer_collection解密重加密结果并保存
                 self.__answer_collection(sub_task_id, ciphertext_list[0])
-            
 
     def __handle_SubTaskAnswerSubmitted(self, raw_event, args):
         self.task_queue.put(("SubTaskAnswerSubmitted", args))
@@ -197,6 +219,7 @@ class Requester(BaseNode):
 
         indexes, answer = self.task.evaluation(answers)
         log.info(f"【Requester】final answer generated {answer} ")
+        self.emit_event("TASK_END")
 
 
 if __name__ == "__main__":

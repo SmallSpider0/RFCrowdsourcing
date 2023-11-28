@@ -21,6 +21,9 @@ import queue
 class Randomizer(BaseNode):
     def __init__(
         self,
+        client_port,
+        client_ip,
+        serving_port,
         ipfs_url,
         provider_url,
         contract_address,
@@ -45,6 +48,9 @@ class Randomizer(BaseNode):
 
         # 基类初始化
         super().__init__(
+            client_port,
+            client_ip,
+            serving_port,
             ipfs_url,
             provider_url,
             contract_address,
@@ -54,7 +60,26 @@ class Randomizer(BaseNode):
             requester_pk_file,
         )
 
-    def _daemon_start(self):
+    # 外部控制接口启动
+    def _server_start(self):
+        # 启动功能
+        self.daemon_start()
+
+        # 服务器功能定义
+        def server(conn, addr):
+            instruction = recvLine(conn)
+            if instruction == "get/gas_cost":
+                sendLine(conn, self.contract_interface.total_gas_cost)
+            conn.close()
+
+        # 启动服务器
+        threading.Thread(
+            target=listen_on_port,
+            args=(server, self.serving_port),
+        ).start()
+        log.info(f"【Randomizer】serving started")
+
+    def daemon_start(self):
         # 0.注册
         self.contract_interface.send_transaction("registerRandomizer", self.id)
         log.debug(f"【Randomizer】{self.id} registrated")
@@ -77,8 +102,6 @@ class Randomizer(BaseNode):
             target=listen_on_port,
             args=(self.__proving_server, self.proving_server_port),
         ).start()
-
-        log.info(f"【Randomizer】started")
 
     # 接收Requester的请求：重加密结果的唯一id（例如区块链上的哈希），要求证明有效性
     # Randomizer应该在重加密后保存相关结果用于提供证明

@@ -10,6 +10,7 @@ sys.path.append(parent_dir)
 from prototype.contract_interface import ContractInterface
 from prototype.utils.elgamal_encryptor import ElgamalEncryptor
 from prototype import ipfshttpclient
+from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 
 # 系统库
 import uuid
@@ -23,6 +24,9 @@ from multiprocessing import Process
 class BaseNode(Process):
     def __init__(
         self,
+        client_port,
+        client_ip,
+        serving_port,
         ipfs_url,
         provider_url,
         contract_address,
@@ -48,12 +52,25 @@ class BaseNode(Process):
         # 初始化IPFS交互模块
         self.ipfs_client = ipfshttpclient.connect(ipfs_url)
 
+        # 初始化其它参数
+        self.serving_port = serving_port
+        self.client_port = client_port
+        self.client_ip = client_ip
+
+    # 启动进程
     def run(self):
-        self._daemon_start()
-    
-    # 节点启动
-    def _daemon_start(self):
+        self._server_start()
+
+    # 外部控制接口启动
+    def _server_start(self):
         pass
+
+    # 发送事件通知客户端
+    def emit_event(self, event):
+        def handler(conn):
+            sendLine(conn, f"event/{event}")
+            conn.close()
+        connect_to(handler, self.client_port, self.client_ip)
 
     def fetch_ipfs(self, file_pointer):
         # 从分布式文件存储服务获取文件

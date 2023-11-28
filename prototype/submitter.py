@@ -1,6 +1,7 @@
 # 添加当前路径至解释器，确保单元测试时可正常import其它文件
 import os
 import sys
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
@@ -15,10 +16,14 @@ from prototype.task.task_interface import SubTaskInterface
 import threading
 import random
 
+
 class Submitter(BaseNode):
     # 构造函数
     def __init__(
         self,
+        client_port,
+        client_ip,
+        serving_port,
         ipfs_url,
         provider_url,
         contract_address,
@@ -29,7 +34,7 @@ class Submitter(BaseNode):
         requester_ip,
         requester_task_pull_port,
         subtask_cls: SubTaskInterface,
-        id
+        id,
     ):
         # 初始化其它参数
         self.id = id
@@ -39,6 +44,9 @@ class Submitter(BaseNode):
 
         # 基类初始化
         super().__init__(
+            client_port,
+            client_ip,
+            serving_port,
             ipfs_url,
             provider_url,
             contract_address,
@@ -48,12 +56,31 @@ class Submitter(BaseNode):
             requester_pk_file,
         )
 
+    # 外部控制接口启动
+    def _server_start(self):
+        # 服务器功能定义
+        def server(conn, addr):
+            instruction = recvLine(conn)
+            # 节点启动
+            if instruction == "start":
+                self.daemon_start()
+            # 获取总gas开销
+            elif instruction == "get/gas_cost":
+                sendLine(conn, self.contract_interface.total_gas_cost)
+            conn.close()
+
+        # 启动服务器
+        threading.Thread(
+            target=listen_on_port,
+            args=(server, self.serving_port),
+        ).start()
+        log.info(f"【Submitter】serving started")
+
     # 启动守护程序
-    def _daemon_start(self):
+    def daemon_start(self):
         # 创建并启动一个新线程来运行主循环
         thread = threading.Thread(target=self.__main_loop)
         thread.start()
-        log.info(f"【Submitter】started")
 
     # submitter的主循环
     def __main_loop(self):
@@ -64,7 +91,9 @@ class Submitter(BaseNode):
                 break
             answer = self.subtask.execute()
             self.submit_answer(answer)
-            log.debug(f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}")
+            log.debug(
+                f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}"
+            )
 
     # 从requester拉取众包任务
     def pull_task(self):
@@ -72,7 +101,10 @@ class Submitter(BaseNode):
             subtask_str = recvLine(conn)
             conn.close()
             return subtask_str
-        subtask_str = connect_to(handler, self.requester_task_pull_port, self.requester_ip)
+
+        subtask_str = connect_to(
+            handler, self.requester_task_pull_port, self.requester_ip
+        )
         if subtask_str == "None":
             return None
         else:
@@ -92,11 +124,7 @@ class Submitter(BaseNode):
         # TODO：实现基于VRF的随机数生成
         vrf_output = random.randint(1, 1000)
         self.contract_interface.send_transaction(
-            "submitSubTaskAnswer",
-            self.subtask.id,
-            commit,
-            filehash,
-            vrf_output
+            "submitSubTaskAnswer", self.subtask.id, commit, filehash, vrf_output
         )
 
 
@@ -124,7 +152,7 @@ if __name__ == "__main__":
         "tmp/keypairs/pk.pkl",
         TASK_PULL_IP,
         TASK_PULL_PORT,
-        SimpleSubtask
+        SimpleSubtask,
     )
 
     submitter.daemon_start()
