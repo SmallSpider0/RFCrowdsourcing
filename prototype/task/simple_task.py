@@ -72,7 +72,8 @@ class SimpleTask(TaskInterface):
         self.description = description
         self.data = data  # 假设是一个数据集list
         self._subtasks_num = subtasks_num
-        self.subtasks = self.__subtask_iter(subtasks_num)
+        self.subtasks = self.__create_subtasks(subtasks_num)
+        self.current_subtask_index = 0
 
     @property
     def subtasks_num(self):
@@ -86,18 +87,19 @@ class SimpleTask(TaskInterface):
     def ANSWER_CLS(self):
         return SimpleAnswer
 
-    def __subtask_iter(self, num):
+    def __create_subtasks(self, num):
         splited_tasks = split_array(self.data, num)
-        for i in range(num):
-            yield SimpleSubtask(
-                i, self.description + f" - Subtask {i}", splited_tasks[i]
-            )
+        return [
+            SimpleSubtask(i, self.description + f" - Subtask {i}", splited_tasks[i])
+            for i in range(num)
+        ]
 
     def get_subtasks(self):
-        try:
-            return next(self.subtasks)
-        except StopIteration:
-            return None  # 或者处理异常的其他方式
+        if self.current_subtask_index < len(self.subtasks):
+            subtask = self.subtasks[self.current_subtask_index]
+            self.current_subtask_index += 1
+            return subtask
+        return None
 
     def evaluation(self, answers):
         """评估子任务的回答"""
@@ -133,9 +135,9 @@ if __name__ == "__main__":
         print(indexes)
         print(str(answer))
 
-    # test_simple_task()
-    ans = SimpleAnswer(2333)
-    print(ans.content)
-    encoded = ans.encode()
-    decoded = SimpleAnswer.from_encoding(encoded)
-    print(decoded.content)
+    test_simple_task()
+    # ans = SimpleAnswer(2333)
+    # print(ans.content)
+    # encoded = ans.encode()
+    # decoded = SimpleAnswer.from_encoding(encoded)
+    # print(decoded.content)

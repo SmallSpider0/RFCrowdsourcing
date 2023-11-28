@@ -10,24 +10,42 @@ sys.path.append(parent_dir)
 from prototype.requester import Requester
 from prototype.submitter import Submitter
 from prototype.randomizer import Randomizer
+from prototype.utils import log
 from prototype.utils.tools import deploy_smart_contract
+from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 
 # 系统库
+import time
 import json
 import random
-import time
+import threading
 from prototype.utils.config import Config
 
 
-class SystemInit:
-    def __init__(self, task, submitter_num, randomizer_num, subtask_num, re_enc_num):
+class SystemInterface:
+    def __init__(
+        self,
+        task,
+        server_callback,
+        submitter_num,
+        randomizer_num,
+        subtask_num,
+        re_enc_num,
+    ):
         # 其它参数
         self.task = task
+        self.server_callback = server_callback
         self.SUBMITTER_NUM = submitter_num
         self.RANDOMIZER_NUM = randomizer_num
+        self.RANDOMIZER_REGISTERED = 0
         self.SUBTASK_NUM = subtask_num
         self.RE_ENC_NUM = re_enc_num
         self.config = Config()
+
+        # 所有节点
+        self.requester = None
+        self.randomizers = None
+        self.submitters = None
 
         # 从配置文件读取参数
         self.ipfs_url = self.config.get_config("app").get("ipfs_url")
@@ -67,6 +85,70 @@ class SystemInit:
             self.randomizer_list.append(
                 (self.RANDOMIZER_PROVING_SERVER_PORT_BASE + id, self.RANDOMIZER_IP)
             )
+
+    def run(self):
+        # 1.启动用于接收各节点信息的服务端
+        self.__server_start()
+        # 2.给各节点分配测试地址
+        (
+            requester_account,
+            submitter_accounts,
+            randomizer_accounts,
+        ) = self.__assign_bc_accounts()
+        # 3.部署智能合约
+        contract_address, contract_abi = self.__deploy_contract(requester_account)
+        # 4.初始化所有节点
+        self.requester, self.randomizers, self.submitters = self.__init_all_nodes(
+            contract_address,
+            contract_abi,
+            requester_account,
+            randomizer_accounts,
+            submitter_accounts,
+        )
+        # 5.启动所有节点的守护程序
+        self.__start_all_nodes()
+
+    # def stop(self):
+    #     self.requester.stop()
+    #     for randomizer in self.randomizers:
+    #         randomizer.stop()
+    #     for submitter in self.submitters:
+    #         submitter.stop()
+    #     log.info(f"【Client】all nodes stoped  ...")
+        
+    def __server_start(self):
+        def server(conn, addr):
+            instruction = recvLine(conn)
+            # 先处理系统请求
+            if instruction == "event/RANDOMIZER_REGISTERED":
+                self.RANDOMIZER_REGISTERED += 1
+            # 处理用户请求
+            else:
+                self.server_callback(instruction, conn, addr)
+
+        # 启动服务器
+        threading.Thread(
+            target=listen_on_port,
+            args=(server, self.CLIENT_PORT),
+        ).start()
+
+    def __start_all_nodes(self):
+        # ------------------
+        # 启动所有节点
+        # ------------------
+        self.requester.run()
+        for randomizer in self.randomizers:
+            randomizer.run()
+
+        # 等待randomizer注册交易执行完成
+        log.info(f"【Client】waiting for randomizers registering ...")
+        while True:
+            if self.RANDOMIZER_REGISTERED == self.RANDOMIZER_NUM:
+                break
+            time.sleep(1)
+
+        for submitter in self.submitters:
+            submitter.run()
 
     def __assign_bc_accounts(self):
         # ------------------
@@ -186,41 +268,52 @@ class SystemInit:
             )
         return requester, randomizers, submitters
 
-    def __start_all_nodes(self, requester, randomizers, submitters):
-        # ------------------
-        # 启动所有节点
-        # ------------------
-        requester.run()
-        for randomizer in randomizers:
-            randomizer.run()
-        time.sleep(20)  # 等待randomizer注册交易执行完成
-        for submitter in submitters:
-            submitter.run()
+    def call_requester(self, data, need_ret=True):
+        def handler(conn):
+            sendLine(conn, data)
+            if need_ret:
+                ret = recvLine(conn)
+                return ret
 
-    def run(self):
-        # 1.给各节点分配测试地址
-        (
-            requester_account,
-            submitter_accounts,
-            randomizer_accounts,
-        ) = self.__assign_bc_accounts()
-        # 2.部署智能合约
-        contract_address, contract_abi = self.__deploy_contract(requester_account)
-        # 3.初始化所有节点
-        requester, randomizers, submitters = self.__init_all_nodes(
-            contract_address,
-            contract_abi,
-            requester_account,
-            randomizer_accounts,
-            submitter_accounts,
+        return connect_to(handler, self.REUQESTER_SERVING_PORT, self.REQUESTER_IP)
+
+    def call_randomizer(self, id, data, need_ret=True):
+        def handler(conn):
+            sendLine(conn, data)
+            if need_ret:
+                ret = recvLine(conn)
+                return ret
+
+        return connect_to(
+            handler, self.RANDOMIZER_SERVING_PORT_BASE + id, self.RANDOMIZER_IP
         )
-        # 4.启动所有节点的守护程序
-        self.__start_all_nodes(requester, randomizers, submitters)
 
+    def call_submitter(self, id, data, need_ret=True):
+        def handler(conn):
+            sendLine(conn, data)
+            if need_ret:
+                ret = recvLine(conn)
+                return ret
+
+        return connect_to(
+            handler, self.SUBMITTER_SERVING_PORT_BASE + id, self.SUBMITTER_IP
+        )
 
 if __name__ == "__main__":
     from prototype.task.cifar10_tagging import CIFAR10Task
 
+    def server(instruction, conn, addr):
+        if instruction == "event/TASK_END":
+            print("event/TASK_END")
+
+    # 启动分布式系统
     task = CIFAR10Task("CIFAR10 tagging", 10)
-    system = SystemInit(task, 1, 1, 10, 1)
+    system = SystemInterface(
+        task, server, submitter_num=1, randomizer_num=5, subtask_num=10, re_enc_num=1
+    )
     system.run()
+
+    # for id in range(1):
+    #     system.call_submitter(id, "start", False)
+
+    system.stop()

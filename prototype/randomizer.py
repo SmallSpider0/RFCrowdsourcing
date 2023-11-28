@@ -43,7 +43,6 @@ class Randomizer(BaseNode):
 
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
-        self.selectedRandomizersLock = threading.Lock()
         self.task_queue = queue.LifoQueue()  # 待处理的事件队列
 
         # 基类初始化
@@ -81,7 +80,11 @@ class Randomizer(BaseNode):
 
     def daemon_start(self):
         # 0.注册
-        self.contract_interface.send_transaction("registerRandomizer", self.id)
+        self.contract_interface.send_transaction_receipt(
+            lambda _, receipt: self.emit_event("RANDOMIZER_REGISTERED"),
+            "registerRandomizer",
+            self.id,
+        )
         log.debug(f"【Randomizer】{self.id} registrated")
 
         # 1.启动事件监听器

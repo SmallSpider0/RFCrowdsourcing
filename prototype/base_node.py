@@ -17,11 +17,10 @@ import uuid
 import os
 import hashlib
 import pickle
-from multiprocessing import Process
 
 
 # 节点的基类（Requester、Randomizer、Submitter）
-class BaseNode(Process):
+class BaseNode():
     def __init__(
         self,
         client_port,

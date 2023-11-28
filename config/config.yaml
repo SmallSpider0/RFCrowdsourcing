@@ -19,7 +19,7 @@ client:
   # 【ip】：节点所在的ip
   ip: "localhost"
   # 【服务端口】：用于实验时获取数据的服务端口
-  serving_port: 20000
+  serving_port: 33333
 
 requester:
   # 【ip】：节点所在的ip

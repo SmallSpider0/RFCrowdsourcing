@@ -46,7 +46,6 @@ class ContractInterface:
             address=contract_address, abi=contract_abi
         )
 
-
         # 账户相关参数
         self.bc_account = bc_account
         self.bc_private_key = bc_private_key
@@ -58,6 +57,21 @@ class ContractInterface:
         # 启动独立线程串行发送交易
         threading.Thread(target=self.__trans_submission_daemon).start()
 
+        # 启动独立线程等待交易回执
+        threading.Thread(target=self.__receipt_handler_daemon).start()
+
+    def send_transaction_receipt(self, callback, function_name: str,  *args, **kwargs):
+        """
+        Sends a transaction to a specified function of the smart contract.
+
+        :param function_name: Name of the contract function to call.
+        :param callback: Callback function when receive receipt.
+        :param args: Positional arguments to pass to the function.
+        :param kwargs: Keyword arguments to pass to the function.
+
+        """
+        self.transaction_queue.put((callback, function_name, args, kwargs))
+
     def send_transaction(self, function_name: str, *args, **kwargs):
         """
         Sends a transaction to a specified function of the smart contract.
@@ -67,16 +81,18 @@ class ContractInterface:
         :param kwargs: Keyword arguments to pass to the function.
 
         """
-        self.transaction_queue.put((function_name, args, kwargs))
+        self.transaction_queue.put((None, function_name, args, kwargs))
 
     def __receipt_handler_daemon(self):
         # 按交易发送顺序获取交易回执
         while True:
-            function_name, txn_hash = self.sent_transaction_queue.get()
+            callback, function_name, txn_hash = self.sent_transaction_queue.get()
             try:
                 receipt = self.web3.eth.wait_for_transaction_receipt(txn_hash, 20, 0.5)
                 if receipt.status != 1:
                     print(function_name, receipt)
+                else:
+                    callback(function_name, receipt)
             except:
                 print(function_name)
 
@@ -84,7 +100,7 @@ class ContractInterface:
         # 按请求顺序发送交易
         while True:
             # 获取下一个待发送的交易
-            function_name, args, kwargs = self.transaction_queue.get()
+            callback, function_name, args, kwargs = self.transaction_queue.get()
 
             # 发送交易
             func = getattr(self.contract.functions, function_name)(*args, **kwargs)
@@ -95,14 +111,20 @@ class ContractInterface:
                     "gasPrice": 0,
                 }
             )
-            # 记录总gas开销
-            self.total_gas_cost += txn["gas"]
-            # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
             signed_txn = self.web3.eth.account.sign_transaction(
                 txn, self.bc_private_key
             )
             txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+            # 异步获取回执
+            if callback != None:
+                self.sent_transaction_queue.put((callback, function_name, txn_hash))
+
+            # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
             self.bc_nonce += 1
+
+            # 记录总gas开销
+            self.total_gas_cost += txn["gas"]
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
@@ -178,7 +200,10 @@ if __name__ == "__main__":
 
     time.sleep(1)
 
-    contract_interface.send_transaction("receiveInteger", 123)
+    # 发送交易 并获取回执
+    def callback(function_name, receipt):
+        print(function_name, receipt)
+    contract_interface.send_transaction_receipt(callback, "receiveInteger", 123)
 
     lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
     print("lastReceivedInteger", lastReceivedInteger)

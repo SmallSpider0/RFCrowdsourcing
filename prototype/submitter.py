@@ -91,7 +91,7 @@ class Submitter(BaseNode):
                 break
             answer = self.subtask.execute()
             self.submit_answer(answer)
-            log.debug(
+            log.info(
                 f"【Submitter】{self.id} successed submitted answer of task {self.subtask.id}"
             )
 
