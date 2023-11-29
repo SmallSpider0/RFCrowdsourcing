@@ -193,9 +193,6 @@ class SystemInterfaceRemote:
         # 服务器0：
         # 基础环境，包括私有链+IPFS
 
-        for i in range(len(self.server_list)):
-            server_list[i]["manager_port"] = self.MANAGER_PORT_BASE + i
-
         # 【分配】Requester（一台服务器，为了体现轻量性，限制只使用一个CPU核心）
         self.server_list[0]["role"] = ("Requester", 1)
         self.REQUESTER_IP = self.server_list[0]["ip"]
@@ -408,24 +405,28 @@ if __name__ == "__main__":
             "ip": "localhost",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
+            "manager_port": 7777
         },
         {
             "name": "test2",
             "ip": "localhost",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
+            "manager_port": 7777
         },
         {
             "name": "test3",
             "ip": "localhost",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 10,
+            "manager_port": 7777
         },
         {
             "name": "test4",
             "ip": "localhost",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 10,
+            "manager_port": 7777
         },
         # {
         #     "ip": "10.12.36.34",
@@ -438,10 +439,10 @@ if __name__ == "__main__":
     system = SystemInterfaceRemote(
         "CIFAR10Task",
         server,
-        submitter_num=10,
-        randomizer_num=10,
-        subtask_num=10,
-        re_enc_num=2,
+        submitter_num=1,
+        randomizer_num=1,
+        subtask_num=1,
+        re_enc_num=1,
         server_list=server_list,
     )
     system.run()
