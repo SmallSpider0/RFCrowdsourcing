@@ -16,9 +16,10 @@ from prototype.utils import log
 import threading
 import queue
 import time
+from multiprocessing import Queue, Process
 
 
-class Requester(BaseNode):
+class Requester(Process, BaseNode):
     # 构造函数
     def __init__(
         self,
@@ -37,31 +38,54 @@ class Requester(BaseNode):
         task: TaskInterface,
         task_pull_serving_port,
     ):
-        # 其它参数初始化
-        self.randomizer_list = randomizer_list
-        self.task_pull_serving_port = task_pull_serving_port
-        self.task = task
-        self.randomizer_of_subtasks = {}  # subtaskid->使用的Randomizer列表
-        self.answers_of_subtasks = queue.LifoQueue()  # 解密后的回答对象
-        self.task_queue = queue.LifoQueue()  # 待处理的事件队列
+        Process.__init__(self)
+        self.init_paras = {
+            "client_port": client_port,
+            "client_ip": client_ip,
+            "serving_port": serving_port,
+            "ipfs_url": ipfs_url,
+            "provider_url": provider_url,
+            "contract_address": contract_address,
+            "contract_abi": contract_abi,
+            "bc_account": bc_account,
+            "bc_private_key": bc_private_key,
+            "requester_pk_str": requester_pk_str,
+            "requester_sk_str": requester_sk_str,
+            "randomizer_list": randomizer_list,
+            "task": task,
+            "task_pull_serving_port": task_pull_serving_port,
+        }
 
+    def __my_init(self):
         # 基类初始化
-        super().__init__(
-            client_port,
-            client_ip,
-            serving_port,
-            ipfs_url,
-            provider_url,
-            contract_address,
-            contract_abi,
-            bc_account,
-            bc_private_key,
-            requester_pk_str,
-            requester_sk_str,
+        BaseNode.__init__(
+            self,
+            self.init_paras["client_port"],
+            self.init_paras["client_ip"],
+            self.init_paras["serving_port"],
+            self.init_paras["ipfs_url"],
+            self.init_paras["provider_url"],
+            self.init_paras["contract_address"],
+            self.init_paras["contract_abi"],
+            self.init_paras["bc_account"],
+            self.init_paras["bc_private_key"],
+            self.init_paras["requester_pk_str"],
+            self.init_paras["requester_sk_str"],
         )
 
+        # 其它参数初始化
+        self.randomizer_list = self.init_paras["randomizer_list"]
+        self.task_pull_serving_port = self.init_paras["task_pull_serving_port"]
+        self.task = self.init_paras["task"]
+        self.randomizer_of_subtasks = {}  # subtaskid->使用的Randomizer列表
+        self.answers_of_subtasks = Queue()  # 解密后的回答对象
+        self.task_queue = Queue()  # 待处理的事件队列
+
     # 外部控制接口启动
-    def _server_start(self):
+    def run(self):
+        # 初始化
+        self.__my_init()
+
         # 启动功能
         self.daemon_start()
 

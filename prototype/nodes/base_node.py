@@ -14,13 +14,12 @@ from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLi
 
 # 系统库
 import uuid
-import os
 import hashlib
 import pickle
 
 
 # 节点的基类（Requester、Randomizer、Submitter）
-class BaseNode:
+class BaseNode():
     def __init__(
         self,
         client_port,
@@ -35,9 +34,6 @@ class BaseNode:
         requester_pk_str,
         requester_sk_str=None,
     ):
-        # 初始化父类
-        super(BaseNode, self).__init__()
-
         # 初始化区块链交互模块
         self.contract_interface = ContractInterface(
             provider_url, contract_address, contract_abi, bc_account, bc_private_key
@@ -53,14 +49,6 @@ class BaseNode:
         self.serving_port = serving_port
         self.client_port = client_port
         self.client_ip = client_ip
-
-    # 启动进程
-    def run(self):
-        self._server_start()
-
-    # 外部控制接口启动
-    def _server_start(self):
-        pass
 
     # 发送事件通知客户端
     def emit_event(self, event):

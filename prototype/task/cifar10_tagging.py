@@ -128,8 +128,6 @@ class CIFAR10Task(TaskInterface):
             os.remove(file_path)
 
             print("Download and extraction complete!")
-        else:
-            print("CIFAR-10 dataset already exists.")
 
     @property
     def subtasks_num(self):

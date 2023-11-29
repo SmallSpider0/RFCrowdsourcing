@@ -11,12 +11,12 @@ from utils.config import Config
 # 系统库
 import logging
 import os
-import threading
+import multiprocessing
 from collections import deque
 from logging.handlers import RotatingFileHandler
 
 logging.getLogger('SmallSpider').setLevel(logging.ERROR)
-lock = threading.Lock()
+lock = multiprocessing.Lock()
 
 LOG_QUEUE = deque(maxlen=200)
 LOG_INDEX = 0

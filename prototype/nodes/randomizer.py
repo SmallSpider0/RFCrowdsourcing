@@ -16,9 +16,10 @@ from prototype.utils.tools import find_next_element
 import threading
 import time
 import queue
+from multiprocessing import Queue, Process
 
 
-class Randomizer(BaseNode):
+class Randomizer(Process, BaseNode):
     def __init__(
         self,
         client_port,
@@ -34,33 +35,52 @@ class Randomizer(BaseNode):
         proving_server_port,
         id=0,
     ):
+        Process.__init__(self)
+        self.init_paras = {
+            "client_port": client_port,
+            "client_ip": client_ip,
+            "serving_port": serving_port,
+            "ipfs_url": ipfs_url,
+            "provider_url": provider_url,
+            "contract_address": contract_address,
+            "contract_abi": contract_abi,
+            "bc_account": bc_account,
+            "bc_private_key": bc_private_key,
+            "requester_pk_str": requester_pk_str,
+            "proving_server_port": proving_server_port,
+            "id": id
+        }
+
+    def __my_init(self):
         # 其它参数初始化
-        self.proving_server_port = proving_server_port
-        self.bc_account = bc_account
-        self.bc_private_key = bc_private_key
-        self.id = id
+        self.proving_server_port = self.init_paras["proving_server_port"]
+        self.id = self.init_paras["id"]
         self.old_alpha_primes = {}
 
         # 初始化用于存储子任务被选中Randomizers的字典
         self.selectedRandomizers = {}
-        self.task_queue = queue.LifoQueue()  # 待处理的事件队列
+        self.task_queue = Queue()  # 待处理的事件队列
 
         # 基类初始化
-        super().__init__(
-            client_port,
-            client_ip,
-            serving_port,
-            ipfs_url,
-            provider_url,
-            contract_address,
-            contract_abi,
-            bc_account,
-            bc_private_key,
-            requester_pk_str,
+        BaseNode.__init__(
+            self,
+            self.init_paras["client_port"],
+            self.init_paras["client_ip"],
+            self.init_paras["serving_port"],
+            self.init_paras["ipfs_url"],
+            self.init_paras["provider_url"],
+            self.init_paras["contract_address"],
+            self.init_paras["contract_abi"],
+            self.init_paras["bc_account"],
+            self.init_paras["bc_private_key"],
+            self.init_paras["requester_pk_str"],
         )
 
     # 外部控制接口启动
-    def _server_start(self):
+    def run(self):
+        # 初始化
+        self.__my_init()
+
         # 启动功能
         self.daemon_start()
 

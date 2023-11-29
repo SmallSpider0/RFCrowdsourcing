@@ -102,30 +102,33 @@ class ContractInterface:
         while True:
             # 获取下一个待发送的交易
             callback, function_name, args, kwargs = self.transaction_queue.get()
+            try:
+                # 发送交易
+                func = getattr(self.contract.functions, function_name)(*args, **kwargs)
+                txn = func.build_transaction(
+                    {
+                        "from": self.bc_account,
+                        "nonce": self.bc_nonce,
+                        "gasPrice": 0,
+                    }
+                )
+                signed_txn = self.web3.eth.account.sign_transaction(
+                    txn, self.bc_private_key
+                )
+                txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
-            # 发送交易
-            func = getattr(self.contract.functions, function_name)(*args, **kwargs)
-            txn = func.build_transaction(
-                {
-                    "from": self.bc_account,
-                    "nonce": self.bc_nonce,
-                    "gasPrice": 0,
-                }
-            )
-            signed_txn = self.web3.eth.account.sign_transaction(
-                txn, self.bc_private_key
-            )
-            txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                # 异步获取回执
+                if callback != None:
+                    self.sent_transaction_queue.put((callback, function_name, txn_hash))
 
-            # 异步获取回执
-            if callback != None:
-                self.sent_transaction_queue.put((callback, function_name, txn_hash))
+                # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
+                self.bc_nonce += 1
 
-            # 本地管理Nonce 避免由于交易发送太快导致Nonce错误
-            self.bc_nonce += 1
+                # 记录总gas开销
+                self.total_gas_cost += txn["gas"]
+            except:
+                print("error: ", function_name)
 
-            # 记录总gas开销
-            self.total_gas_cost += txn["gas"]
 
     def call_function(self, function_name: str, *args, **kwargs):
         """

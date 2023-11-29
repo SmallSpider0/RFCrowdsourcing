@@ -16,7 +16,6 @@ from prototype.task.task_interface import SubTaskInterface
 import threading
 import random
 
-
 class Submitter(BaseNode):
     # 构造函数
     def __init__(
@@ -36,28 +35,50 @@ class Submitter(BaseNode):
         subtask_cls: SubTaskInterface,
         id,
     ):
+        self.init_paras = {
+            "client_port": client_port,
+            "client_ip": client_ip,
+            "serving_port": serving_port,
+            "ipfs_url": ipfs_url,
+            "provider_url": provider_url,
+            "contract_address": contract_address,
+            "contract_abi": contract_abi,
+            "bc_account": bc_account,
+            "bc_private_key": bc_private_key,
+            "requester_pk_str": requester_pk_str,
+            "requester_ip": requester_ip,
+            "requester_task_pull_port": requester_task_pull_port,
+            "subtask_cls": subtask_cls,
+            "id": id,
+        }
+
+    def __my_init(self):
         # 初始化其它参数
-        self.id = id
-        self.requester_ip = requester_ip
-        self.requester_task_pull_port = requester_task_pull_port
-        self.subtask_cls = subtask_cls
+        self.id = self.init_paras["id"]
+        self.requester_ip = self.init_paras["requester_ip"]
+        self.requester_task_pull_port = self.init_paras["requester_task_pull_port"]
+        self.subtask_cls = self.init_paras["subtask_cls"]
 
         # 基类初始化
-        super().__init__(
-            client_port,
-            client_ip,
-            serving_port,
-            ipfs_url,
-            provider_url,
-            contract_address,
-            contract_abi,
-            bc_account,
-            bc_private_key,
-            requester_pk_str,
+        BaseNode.__init__(
+            self,
+            self.init_paras["client_port"],
+            self.init_paras["client_ip"],
+            self.init_paras["serving_port"],
+            self.init_paras["ipfs_url"],
+            self.init_paras["provider_url"],
+            self.init_paras["contract_address"],
+            self.init_paras["contract_abi"],
+            self.init_paras["bc_account"],
+            self.init_paras["bc_private_key"],
+            self.init_paras["requester_pk_str"],
         )
 
     # 外部控制接口启动
-    def _server_start(self):
+    def start(self):
+        # 初始化
+        self.__my_init()
+
         # 服务器功能定义
         def server(conn, addr):
             instruction = recvLine(conn)

@@ -1,5 +1,5 @@
 import os
-from threading import Lock
+from multiprocessing import Lock
 import ruamel.yaml
 
 # 线程锁
