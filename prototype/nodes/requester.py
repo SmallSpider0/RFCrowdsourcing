@@ -31,8 +31,8 @@ class Requester(BaseNode):
         contract_abi,
         bc_account,
         bc_private_key,
-        requester_pk_file,
-        requester_sk_file,
+        requester_pk_str,
+        requester_sk_str,
         randomizer_list,
         task: TaskInterface,
         task_pull_serving_port,
@@ -56,8 +56,8 @@ class Requester(BaseNode):
             contract_abi,
             bc_account,
             bc_private_key,
-            requester_pk_file,
-            requester_sk_file,
+            requester_pk_str,
+            requester_sk_str,
         )
 
     # 外部控制接口启动
@@ -196,7 +196,7 @@ class Requester(BaseNode):
     def __answer_collection(self, subTaskId, ciphertexts):
         # 1.使用自己的私钥解密submissions中的回答
         ans_content = self.encryptor.decrypt(ciphertexts)
-        answer_obj = self.task.ANSWER_CLS.from_encoding(ans_content)
+        answer_obj = self.task.ANSWER_CLS().from_encoding(ans_content)
 
         # 2.将解密结果放入队列，供后续处理
         self.answers_of_subtasks.put((subTaskId, answer_obj))

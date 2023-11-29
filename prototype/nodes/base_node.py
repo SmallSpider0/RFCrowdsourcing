@@ -20,7 +20,7 @@ import pickle
 
 
 # 节点的基类（Requester、Randomizer、Submitter）
-class BaseNode():
+class BaseNode:
     def __init__(
         self,
         client_port,
@@ -32,8 +32,8 @@ class BaseNode():
         contract_abi,
         bc_account,
         bc_private_key,
-        requester_pk_file,
-        requester_sk_file=None,
+        requester_pk_str,
+        requester_sk_str=None,
     ):
         # 初始化父类
         super(BaseNode, self).__init__()
@@ -44,9 +44,7 @@ class BaseNode():
         )
 
         # 初始化密码学模块
-        self.encryptor = ElgamalEncryptor(
-            public_key_file=requester_pk_file, private_key_file=requester_sk_file
-        )
+        self.encryptor = ElgamalEncryptor(requester_pk_str, requester_sk_str)
 
         # 初始化IPFS交互模块
         self.ipfs_client = ipfshttpclient.connect(ipfs_url)
@@ -69,6 +67,7 @@ class BaseNode():
         def handler(conn):
             sendLine(conn, f"event/{event}")
             conn.close()
+
         connect_to(handler, self.client_port, self.client_ip)
 
     def fetch_ipfs(self, file_pointer):

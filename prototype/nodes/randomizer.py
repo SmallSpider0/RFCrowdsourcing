@@ -30,7 +30,7 @@ class Randomizer(BaseNode):
         contract_abi,
         bc_account,
         bc_private_key,
-        requester_pk_file,
+        requester_pk_str,
         proving_server_port,
         id=0,
     ):
@@ -56,7 +56,7 @@ class Randomizer(BaseNode):
             contract_abi,
             bc_account,
             bc_private_key,
-            requester_pk_file,
+            requester_pk_str,
         )
 
     # 外部控制接口启动

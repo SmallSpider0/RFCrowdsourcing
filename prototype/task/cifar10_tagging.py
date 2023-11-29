@@ -135,11 +135,11 @@ class CIFAR10Task(TaskInterface):
     def subtasks_num(self):
         return self._subtasks_num
 
-    @property
+    @classmethod
     def SUBTASK_CLS(self):
         return CIFAR10Subtask
 
-    @property
+    @classmethod
     def ANSWER_CLS(self):
         return CIFAR10Answer
 
@@ -167,7 +167,7 @@ class CIFAR10Task(TaskInterface):
                 valid_answers.append(answer)
                 valid_answers_indexes.append(index)
             index += 1
-        final_answer = self.ANSWER_CLS.merge(valid_answers)
+        final_answer = self.ANSWER_CLS().merge(valid_answers)
         return valid_answers_indexes, final_answer
 
 

@@ -30,7 +30,7 @@ class Submitter(BaseNode):
         contract_abi,
         bc_account,
         bc_private_key,
-        requester_pk_file,
+        requester_pk_str,
         requester_ip,
         requester_task_pull_port,
         subtask_cls: SubTaskInterface,
@@ -53,7 +53,7 @@ class Submitter(BaseNode):
             contract_abi,
             bc_account,
             bc_private_key,
-            requester_pk_file,
+            requester_pk_str,
         )
 
     # 外部控制接口启动

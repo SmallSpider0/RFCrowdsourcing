@@ -11,8 +11,14 @@ app:
   ipfs_url: /ip4/127.0.0.1/tcp/5001
   # 【web3服务url】：HTTP接口地址
   web3_url: http://127.0.0.1:8545
-  # 测试账户地址
+  # 【测试账户】测试账户地址和私钥列表
   account_path: "config/bc_keys.json"
+  # 【系统公钥】Requester的公钥路径
+  public_key_file: "tmp/keypairs/pk.pkl"
+  # 【系统私钥】Requester的私钥路径
+  private_key_file: "tmp/keypairs/sk.pkl"
+  # 【管理进行端口】
+  manager_port_base: 7777
 
 # 实验时用于控制系统的的客户端
 client:

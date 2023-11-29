@@ -47,13 +47,13 @@ class TaskInterface(ABC):
         """返回子任务的数量"""
         pass
 
-    @property
+    @classmethod
     @abstractmethod
     def SUBTASK_CLS(cls):
         """返回子任务的类"""
         pass
     
-    @property
+    @classmethod
     @abstractmethod
     def ANSWER_CLS(cls):
         """返回子任务回答的类"""

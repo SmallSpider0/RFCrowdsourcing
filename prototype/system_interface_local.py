@@ -11,6 +11,7 @@ from prototype.nodes.requester import Requester
 from prototype.nodes.submitter import Submitter
 from prototype.nodes.randomizer import Randomizer
 from prototype.utils import log
+from prototype.utils.config import Config
 from prototype.utils.tools import deploy_smart_contract
 from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 
@@ -19,7 +20,7 @@ import time
 import json
 import random
 import threading
-from prototype.utils.config import Config
+import pickle
 
 # 在本地部署分布式系统
 class SystemInterfaceLocal:
@@ -48,8 +49,16 @@ class SystemInterfaceLocal:
         self.submitters = None
 
         # 从配置文件读取参数
+        
+        # 【通用参数】
         self.ipfs_url = self.config.get_config("app").get("ipfs_url")
         self.web3_url = self.config.get_config("app").get("web3_url")
+        public_key_file = self.config.get_config("app").get("public_key_file")
+        private_key_file = self.config.get_config("app").get("private_key_file")
+        with open(public_key_file, "rb") as f:
+            self.public_key_str = pickle.load(f)
+        with open(private_key_file, "rb") as f:
+            self.private_key_str = pickle.load(f)
 
         # 【Client】参数
         self.CLIENT_PORT = self.config.get_config("client").get("serving_port")
@@ -214,8 +223,8 @@ class SystemInterfaceLocal:
             contract_abi,
             requester_account[0],
             requester_account[1],
-            "tmp/keypairs/pk.pkl",
-            "tmp/keypairs/sk.pkl",
+            self.public_key_str,
+            self.private_key_str,
             self.randomizer_list,
             self.task,
             self.REQUESTER_TASK_PULL_PORT,
@@ -237,7 +246,7 @@ class SystemInterfaceLocal:
                     contract_abi,
                     randomizer_accounts[id][0],
                     randomizer_accounts[id][1],
-                    "tmp/keypairs/pk.pkl",
+                    self.public_key_str,
                     self.RANDOMIZER_PROVING_SERVER_PORT_BASE + id,
                     id,
                 )
@@ -259,10 +268,10 @@ class SystemInterfaceLocal:
                     contract_abi,
                     submitter_accounts[id][0],
                     submitter_accounts[id][1],
-                    "tmp/keypairs/pk.pkl",
+                    self.public_key_str,
                     self.REQUESTER_IP,
                     self.REQUESTER_TASK_PULL_PORT,
-                    self.task.SUBTASK_CLS,
+                    self.task.SUBTASK_CLS(),
                     id,
                 )
             )

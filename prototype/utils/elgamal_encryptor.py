@@ -16,17 +16,10 @@ from Crypto.Random.random import randrange
 
 class ElgamalEncryptor:
     # 构造函数 输入公私钥文件
-    def __init__(self, public_key_file=None, private_key_file=None):
-        self.pk = None
-        self.sk = None
-        if public_key_file:
-            with open(public_key_file, "rb") as f:
-                tmp = pickle.load(f)
-            self.pk = ElGamal.PublicKey.from_str(tmp)
-        if private_key_file:
-            with open(private_key_file, "rb") as f:
-                tmp = pickle.load(f)
-            self.sk = ElGamal.PrivateKey.from_str(tmp)
+    def __init__(self, public_key_str, private_key_str=None):
+        self.pk = ElGamal.PublicKey.from_str(public_key_str)
+        if private_key_str != None:
+            self.sk = ElGamal.PrivateKey.from_str(private_key_str)
 
     # 生成密钥对
     @classmethod

@@ -79,11 +79,11 @@ class SimpleTask(TaskInterface):
     def subtasks_num(self):
         return self._subtasks_num
 
-    @property
+    @classmethod
     def SUBTASK_CLS(self):
         return SimpleSubtask
 
-    @property
+    @classmethod
     def ANSWER_CLS(self):
         return SimpleAnswer
 
@@ -111,7 +111,7 @@ class SimpleTask(TaskInterface):
                 valid_answers.append(answer)
                 valid_answers_indexes.append(index)
             index += 1
-        final_answer = self.ANSWER_CLS.merge(valid_answers)
+        final_answer = self.ANSWER_CLS().merge(valid_answers)
         return valid_answers_indexes, final_answer
 
 
