@@ -8,7 +8,7 @@ sys.path.append(parent_dir)
 
 # 基于顶层包的import
 from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
-from prototype.base_node import BaseNode
+from prototype.nodes.base_node import BaseNode
 from prototype.task.task_interface import TaskInterface
 from prototype.utils import log
 

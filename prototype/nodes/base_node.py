@@ -7,9 +7,9 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from prototype.contract_interface import ContractInterface
+from prototype.nodes.contract_interface import ContractInterface
 from prototype.utils.elgamal_encryptor import ElgamalEncryptor
-from prototype import ipfshttpclient
+from prototype.thirdparty import ipfshttpclient
 from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 
 # 系统库

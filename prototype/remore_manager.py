@@ -7,9 +7,9 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from prototype.requester import Requester
-from prototype.submitter import Submitter
-from prototype.randomizer import Randomizer
+from prototype.nodes.requester import Requester
+from prototype.nodes.submitter import Submitter
+from prototype.nodes.randomizer import Randomizer
 from prototype.utils import log
 from prototype.utils.config import Config
 from prototype.utils.tools import deploy_smart_contract
@@ -29,7 +29,7 @@ import threading
 # TODO: 实现使用ssh自动进行远程部署
 
 
-class MyServer:
+class Manager:
     def __init__(self, port):
         # 其它参数
         self.config = Config()
@@ -194,3 +194,11 @@ if __name__ == "__main__":
 
 
     connect_to(handler, 50000)
+
+    # TODO：思考完整流程是否有缺陷
+    # 1.使用ssh等方法在服务器上启动管理器进程
+    # 2.使用system_interface类与各管理器进程交互，自动搭建实验环境
+    # 目的：overall 系统性能评估
+
+    # TODO：修改客户端，实现调用该服务器方便测试
+    # TODO：实现多进程启动节点（先查出是什么原因导致无法启动多进程）

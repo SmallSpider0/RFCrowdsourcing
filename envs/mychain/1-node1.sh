@@ -12,4 +12,4 @@ nohup ./geth \
     > ../logs/bc_node1 2>&1 &
 
 # wait for node started
-sleep 3
+sleep 5

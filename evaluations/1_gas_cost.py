@@ -8,7 +8,10 @@ sys.path.append(parent_dir)
 
 # 基于顶层包的import
 from prototype.task.cifar10_tagging import CIFAR10Task
-from prototype.system_interface import SystemInterface
+from prototype.system_interface_local import SystemInterfaceLocal
+
+
+# TODO:直接用测试少量数据计算的方式来评估各实验参数下的gas
 
 
 # 该类的每个对象对应一组实验参数的实验
@@ -16,7 +19,7 @@ class EvalGasCost:
     def __init__(self, eval_paras):
         # 启动分布式系统
         task = CIFAR10Task("CIFAR10 tagging", eval_paras["submitter_num"])
-        self.system = SystemInterface(
+        self.system = SystemInterfaceLocal(
             task,
             self.__server,
             submitter_num=eval_paras["submitter_num"],

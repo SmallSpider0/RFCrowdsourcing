@@ -7,9 +7,9 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
-from prototype.requester import Requester
-from prototype.submitter import Submitter
-from prototype.randomizer import Randomizer
+from prototype.nodes.requester import Requester
+from prototype.nodes.submitter import Submitter
+from prototype.nodes.randomizer import Randomizer
 from prototype.utils import log
 from prototype.utils.tools import deploy_smart_contract
 from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
@@ -21,8 +21,8 @@ import random
 import threading
 from prototype.utils.config import Config
 
-# TODO：实现自动远程部署（本地测试使用命令行开启新的进程实现）
-class SystemInterface:
+# 在本地部署分布式系统
+class SystemInterfaceLocal:
     def __init__(
         self,
         task,
@@ -308,12 +308,10 @@ if __name__ == "__main__":
 
     # 启动分布式系统
     task = CIFAR10Task("CIFAR10 tagging", 10)
-    system = SystemInterface(
+    system = SystemInterfaceLocal(
         task, server, submitter_num=1, randomizer_num=5, subtask_num=10, re_enc_num=1
     )
     system.run()
 
-    # for id in range(1):
-    #     system.call_submitter(id, "start", False)
-
-    system.stop()
+    for id in range(1):
+        system.call_submitter(id, "start", False)
