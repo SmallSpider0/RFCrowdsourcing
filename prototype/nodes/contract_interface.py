@@ -50,7 +50,11 @@ class ContractInterface:
         # 账户相关参数
         self.bc_account = bc_account
         self.bc_private_key = bc_private_key
-        self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
+        try:
+            self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
+        except:
+            time.sleep(2)
+            self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
         self.transaction_queue = queue.LifoQueue()
         self.sent_transaction_queue = queue.LifoQueue()
         self.total_gas_cost = 0

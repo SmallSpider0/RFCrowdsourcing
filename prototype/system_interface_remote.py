@@ -399,34 +399,35 @@ if __name__ == "__main__":
         if instruction == "event/TASK_END":
             print("event/TASK_END")
 
+    ip = "10.12.46.33"
     server_list = [
         {
             "name": "test1",
-            "ip": "10.12.46.33",
+            "ip": ip,
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
             "manager_port": 7777
         },
         {
             "name": "test2",
-            "ip": "10.12.46.33",
+            "ip": ip,
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
             "manager_port": 7777
         },
         {
             "name": "test3",
-            "ip": "10.12.46.33",
+            "ip": ip,
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 20,
+            "cpu_cores": 4,
             "manager_port": 7777
         },
         {
             "name": "test4",
-            "ip": "10.12.46.33",
+            "ip": ip,
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 0,
-            "manager_port": 7777
+            "cpu_cores": 4,
+            "manager_port": 7778
         },
         # {
         #     "ip": "10.12.36.34",
@@ -440,7 +441,7 @@ if __name__ == "__main__":
         "CIFAR10Task",
         server,
         submitter_num=5,
-        randomizer_num=15,
+        randomizer_num=8,
         subtask_num=10,
         re_enc_num=2,
         server_list=server_list,
