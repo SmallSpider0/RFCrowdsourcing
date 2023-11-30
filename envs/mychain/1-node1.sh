@@ -10,6 +10,3 @@ nohup ./geth \
     --unlock "0x9A82f98d6083c30632A22a9e93a9dfA8B054C929" \
     --password "./config/password.txt" \
     > ../logs/bc_node1 2>&1 &
-
-# wait for node started
-sleep 5

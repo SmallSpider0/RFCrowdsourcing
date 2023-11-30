@@ -1,3 +1,12 @@
+# 设置文件路径
+FILE_PATH="./data1/geth.ipc"
+
+# 循环直到文件出现
+while [ ! -S "$FILE_PATH" ]; do
+  echo "等待文件 $FILE_PATH 出现..."
+  sleep 1  # 每次检查之间暂停1秒
+done
+
 ENODE=$(./geth --exec "admin.nodeInfo.enode" attach "data1/geth.ipc")
 ENODE_CLEANED=$(echo $ENODE | tr -d '"')
 
