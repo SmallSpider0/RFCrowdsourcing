@@ -17,6 +17,4 @@ COPY test.sh .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 在容器启动时运行Python应用
-# CMD ["python", "./start_manager.py"]
-
-CMD ["./test.sh"]
+CMD ["python", "./start_manager.py"]

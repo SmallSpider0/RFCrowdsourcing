@@ -419,15 +419,15 @@ if __name__ == "__main__":
             "name": "test3",
             "ip": ip,
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 4,
+            "cpu_cores": 10,
             "manager_port": 7777
         },
         {
             "name": "test4",
             "ip": ip,
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 4,
-            "manager_port": 7778
+            "cpu_cores": 10,
+            "manager_port": 7777
         },
         # {
         #     "ip": "10.12.36.34",
@@ -440,13 +440,13 @@ if __name__ == "__main__":
     system = SystemInterfaceRemote(
         "CIFAR10Task",
         server,
-        submitter_num=5,
-        randomizer_num=8,
-        subtask_num=10,
-        re_enc_num=2,
+        submitter_num=10,
+        randomizer_num=20,
+        subtask_num=100,
+        re_enc_num=3,
         server_list=server_list,
     )
     system.run()
 
-    for id in range(5):
+    for id in range(10):
         system.call_submitter(id, "start", False)
