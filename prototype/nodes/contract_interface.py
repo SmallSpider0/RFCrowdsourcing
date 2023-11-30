@@ -169,9 +169,17 @@ class ContractInterface:
                 time.sleep(poll_interval)
 
         # 创建事件过滤器
-        event_filter = getattr(self.contract.events, event_name).create_filter(
-            fromBlock="0x0"
-        )
+        while True:
+            try:
+                event_filter = getattr(self.contract.events, event_name).create_filter(
+                    fromBlock="0x0"
+                )
+            except:
+                pass
+            else:
+                break
+            time.sleep(1)
+
         if is_async:
             worker = Thread(
                 target=log_loop,
