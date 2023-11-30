@@ -83,7 +83,7 @@ class Manager:
             self.task,
             paras["REQUESTER_TASK_PULL_PORT"],
         )
-        self.requester.run()
+        self.requester.start()
 
     def __start_randomizers(self, paras_list):
         # ------------------
@@ -108,7 +108,7 @@ class Manager:
                 )
             )
         for randomizer in randomizers_batch:
-            randomizer.run()
+            randomizer.start()
         self.randomizers += randomizers_batch
 
     def __start_submitters(self, paras_list):
@@ -135,7 +135,7 @@ class Manager:
                 )
             )
         for submitter in submitters_batch:
-            submitter.run()
+            submitter.start()
         self.submitters += submitters_batch
 
 

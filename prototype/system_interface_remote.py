@@ -12,7 +12,7 @@ from prototype.nodes.submitter import Submitter
 from prototype.nodes.randomizer import Randomizer
 from prototype.utils import log
 from prototype.utils.config import Config
-from prototype.utils.tools import deploy_smart_contract
+from prototype.utils.tools import deploy_smart_contract, ssh_command
 from prototype.utils.network import listen_on_port, connect_to, sendLine, recvLine
 
 # 系统库
@@ -402,30 +402,30 @@ if __name__ == "__main__":
     server_list = [
         {
             "name": "test1",
-            "ip": "localhost",
+            "ip": "10.12.46.33",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
             "manager_port": 7777
         },
         {
             "name": "test2",
-            "ip": "localhost",
+            "ip": "10.12.46.33",
             "auth": {"type": "local", "data": None},
             "cpu_cores": 4,
             "manager_port": 7777
         },
         {
             "name": "test3",
-            "ip": "localhost",
+            "ip": "10.12.46.33",
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 10,
+            "cpu_cores": 20,
             "manager_port": 7777
         },
         {
             "name": "test4",
-            "ip": "localhost",
+            "ip": "10.12.46.33",
             "auth": {"type": "local", "data": None},
-            "cpu_cores": 10,
+            "cpu_cores": 0,
             "manager_port": 7777
         },
         # {
@@ -439,13 +439,13 @@ if __name__ == "__main__":
     system = SystemInterfaceRemote(
         "CIFAR10Task",
         server,
-        submitter_num=1,
-        randomizer_num=1,
-        subtask_num=1,
-        re_enc_num=1,
+        submitter_num=5,
+        randomizer_num=15,
+        subtask_num=10,
+        re_enc_num=2,
         server_list=server_list,
     )
     system.run()
 
-    for id in range(1):
+    for id in range(5):
         system.call_submitter(id, "start", False)

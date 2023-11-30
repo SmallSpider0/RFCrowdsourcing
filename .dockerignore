@@ -1,0 +1,7 @@
+# mychain / ipfs
+envs/mychain/bin
+envs/mychain/data*/geth/
+envs/ipfs/bin
+envs/ipfs/data/*
+envs/logs/
+!envs/ipfs/data/config

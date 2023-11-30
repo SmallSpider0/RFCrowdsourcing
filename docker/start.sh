@@ -1,1 +1,0 @@
-docker run --net=host -p 7777:7777 rf-crowdsourcing

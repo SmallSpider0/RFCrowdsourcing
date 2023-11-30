@@ -4,7 +4,30 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 import re
 import json
+import paramiko
 
+def ssh_command(host, port, username, password, command):
+    # 创建 SSHClient 实例
+    ssh = paramiko.SSHClient()
+    # 自动添加策略，保存服务器的主机名和密钥信息
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # 连接到服务器
+        ssh.connect(host, port, username, password)
+
+        # 执行命令
+        stdin, stdout, stderr = ssh.exec_command(command)
+
+        # 读取输出
+        result = stdout.read()
+        if not result:
+            result = stderr.read()
+        return result.decode()
+
+    finally:
+        # 关闭连接
+        ssh.close()
 
 def split_array(arr, n):
     """将数组拆分为最多n个相同大小的分片，最后一个分片大小可以不同。
