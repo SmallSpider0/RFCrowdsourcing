@@ -161,8 +161,11 @@ class ContractInterface:
 
         def log_loop(event_filter, event_handler, poll_interval):
             while True:
-                for event in event_filter.get_new_entries():
-                    event_handler(event, event["args"])
+                try:
+                    for event in event_filter.get_new_entries():
+                        event_handler(event, event["args"])
+                except:
+                    pass
                 time.sleep(poll_interval)
 
         # 创建事件过滤器
