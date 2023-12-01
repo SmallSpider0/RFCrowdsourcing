@@ -97,7 +97,7 @@ class SimpleTask(TaskInterface):
         ]
 
     def get_subtasks(self):
-        with self.lock():
+        with self.lock:
             if self.current_subtask_index < len(self.subtasks):
                 subtask = self.subtasks[self.current_subtask_index]
                 self.current_subtask_index += 1
