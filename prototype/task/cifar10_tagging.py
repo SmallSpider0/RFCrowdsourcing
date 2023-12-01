@@ -18,6 +18,7 @@ import pickle
 import random
 import tarfile
 import urllib.request
+from multiprocessing import Lock
 
 
 class CIFAR10Answer(AnswerInterface):
@@ -93,6 +94,7 @@ class CIFAR10Task(TaskInterface):
         self._subtasks_num = subtasks_num
         self.subtasks = self.__create_subtasks(subtasks_num)
         self.current_subtask_index = 0
+        self.lock = Lock()
 
     def __unpickle(self, file):
         with open(file, "rb") as fo:
@@ -149,11 +151,12 @@ class CIFAR10Task(TaskInterface):
         ]
 
     def get_subtasks(self):
-        if self.current_subtask_index < len(self.subtasks):
-            subtask = self.subtasks[self.current_subtask_index]
-            self.current_subtask_index += 1
-            return subtask
-        return None
+        with self.lock():
+            if self.current_subtask_index < len(self.subtasks):
+                subtask = self.subtasks[self.current_subtask_index]
+                self.current_subtask_index += 1
+                return subtask
+            return None
 
     def evaluation(self, answers):
         """评估子任务的回答"""

@@ -99,7 +99,7 @@ class Requester(Process, BaseNode):
         # 启动服务器
         threading.Thread(
             target=listen_on_port,
-            args=(server, self.serving_port, False),
+            args=(server, self.serving_port),
         ).start()
         log.info(f"【Requester】serving started")
 
