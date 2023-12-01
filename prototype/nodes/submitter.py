@@ -120,7 +120,6 @@ class Submitter(BaseNode):
     def pull_task(self):
         def handler(conn):
             subtask_str = recvLine(conn)
-            conn.close()
             return subtask_str
 
         subtask_str = connect_to(

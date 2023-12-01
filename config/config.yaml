@@ -8,11 +8,13 @@ app:
   # 【日志级别】：debug、info、error
   loglevel: info
   # 【IPFS服务url】：本地私有部署IPFS
-  ipfs_url: /ip4/10.12.46.33/tcp/5001
+  ipfs_url: /ip4/120.27.229.80/tcp/5001
   # 【web3服务url】：HTTP接口地址
-  web3_url: http://10.12.46.33:18545
+  web3_url: http://120.27.229.80:18545
   # 【测试账户】测试账户地址和私钥列表
   account_path: "config/bc_keys.json"
+  # 【测试服务器】
+  server_list_path: "config/server_list.json"
   # 【系统公钥】Requester的公钥路径
   public_key_file: "tmp/keypairs/pk.pkl"
   # 【系统私钥】Requester的私钥路径
@@ -22,9 +24,13 @@ app:
 
 # 实验时用于控制系统的的客户端
 client:
-  ip: 10.12.46.19
+  ip: "localhost"
   # 【服务端口】：用于实验时获取数据的服务端口
   serving_port: 33333
+  # 【启动manager使用的命令】
+  manager_start_command: "docker run -d --name manager --net=host xzc2034222/rf-crowdsourcing-manager:amd64"
+  # 【启动envs使用的命令】
+  envs_start_command: "docker run -d --name envs --net=host xzc2034222/rf-crowdsourcing-envs:amd64"
 
 requester:
   # 【任务获取端口】：提供子任务获取的端口

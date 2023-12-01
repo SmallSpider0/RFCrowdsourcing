@@ -33,7 +33,6 @@ class SystemInterfaceRemote:
         randomizer_num,
         subtask_num,
         re_enc_num,
-        server_list,
     ):
         # 其它参数
         self.task_name = task_name
@@ -45,6 +44,9 @@ class SystemInterfaceRemote:
         self.RE_ENC_NUM = re_enc_num
 
         # 可用的服务器列表（包含IP和认证方式）
+        server_list_path = self.config.get_config("app").get("server_list_path")
+        with open(server_list_path, "r") as f:
+            server_list = json.load(f)
         self.server_list = server_list
 
         # 所有节点参数
@@ -70,6 +72,12 @@ class SystemInterfaceRemote:
             self.private_key_str = pickle.load(f)
 
         # 【Client】参数
+        self.manager_start_command = self.config.get_config("client").get(
+            "manager_start_command"
+        )
+        self.envs_start_command = self.config.get_config("client").get(
+            "envs_start_command"
+        )
         self.CLIENT_PORT = self.config.get_config("client").get("serving_port")
         self.CLIENT_IP = self.config.get_config("client").get("ip")
 
@@ -124,10 +132,22 @@ class SystemInterfaceRemote:
         )
 
         # 6.启动所有服务器的管理进程
-        self.__start_manager()
+        # self.start_manager()
 
         # 7.与各服务器管理进程通信，启动所有节点的守护程序
         self.__start_all_nodes()
+
+    # 连接远程服务器并启动管理进程
+    def start_manager(self, i):
+        server = self.server_list[i]
+        log.info(f"【Client】deploying enviroment on server {server['name']}...")
+        # 环境部署在列表中第一台服务器上
+        if i == 0:
+            ret = ssh_command(server, self.envs_start_command)
+            print("env:", ret)
+        # 所有服务器都需要启动管理器
+        ret = ssh_command(server, self.manager_start_command)
+        print("manager", ret)
 
     def call_requester(self, data, need_ret=True):
         def handler(conn):
@@ -253,12 +273,6 @@ class SystemInterfaceRemote:
                 break
             time.sleep(1)
         log.info(f"【Client】all randomizers registered")
-
-    # 连接远程服务器并启动管理进程
-    def __start_manager(self):
-        # TODO:需要确定如何实现
-        for server in self.server_list:
-            pass
 
     # 与管理进程进行通信
     def __call_manager(self, instructioin, data, server):
@@ -399,54 +413,24 @@ if __name__ == "__main__":
         if instruction == "event/TASK_END":
             print("event/TASK_END")
 
-    ip = "10.12.46.33"
-    server_list = [
-        {
-            "name": "test1",
-            "ip": ip,
-            "auth": {"type": "local", "data": None},
-            "cpu_cores": 4,
-            "manager_port": 7777
-        },
-        {
-            "name": "test2",
-            "ip": ip,
-            "auth": {"type": "local", "data": None},
-            "cpu_cores": 4,
-            "manager_port": 7777
-        },
-        {
-            "name": "test3",
-            "ip": ip,
-            "auth": {"type": "local", "data": None},
-            "cpu_cores": 10,
-            "manager_port": 7777
-        },
-        {
-            "name": "test4",
-            "ip": ip,
-            "auth": {"type": "local", "data": None},
-            "cpu_cores": 10,
-            "manager_port": 7777
-        },
-        # {
-        #     "ip": "10.12.36.34",
-        #     "auth": {"type": "psw", "data": {"user": "root", "password": "root"}},
-        #     "roles": (0, 1, 0),
-        # },
-    ]
+    # TODO：测试数据不能上传github！！！！
+    # TODO：执行命令 配置内网穿透（服务器1上）
+    SUBMITTER_NUM = 2
+    RANDOMIZER_NUM = 8
+    SUBTASK_NUM = 10
+    RE_ENC_NUM = 2
 
     # 启动分布式系统
     system = SystemInterfaceRemote(
         "CIFAR10Task",
         server,
-        submitter_num=10,
-        randomizer_num=20,
-        subtask_num=100,
-        re_enc_num=3,
-        server_list=server_list,
+        SUBMITTER_NUM,
+        RANDOMIZER_NUM,
+        SUBTASK_NUM,
+        RE_ENC_NUM
     )
+    # system.start_manager(0)
     system.run()
 
-    for id in range(10):
+    for id in range(SUBMITTER_NUM):
         system.call_submitter(id, "start", False)

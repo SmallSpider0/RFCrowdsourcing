@@ -6,7 +6,7 @@ import re
 import json
 import paramiko
 
-def ssh_command(host, port, username, password, command):
+def ssh_command(server, command):
     # 创建 SSHClient 实例
     ssh = paramiko.SSHClient()
     # 自动添加策略，保存服务器的主机名和密钥信息
@@ -14,7 +14,7 @@ def ssh_command(host, port, username, password, command):
     
     try:
         # 连接到服务器
-        ssh.connect(host, port, username, password)
+        ssh.connect(server["ip"], 22, server["user"], server["password"])
 
         # 执行命令
         stdin, stdout, stderr = ssh.exec_command(command)

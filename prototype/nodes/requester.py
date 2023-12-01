@@ -133,6 +133,7 @@ class Requester(Process, BaseNode):
         # 如果没有新的subtask了则返回None
         subtask = self.task.get_subtasks()
         sendLine(conn, str(subtask))  # 将任务序列化后发送
+        conn.close()
 
     def __task_handler_daemon(self):
         while True:

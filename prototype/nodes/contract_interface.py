@@ -50,11 +50,14 @@ class ContractInterface:
         # 账户相关参数
         self.bc_account = bc_account
         self.bc_private_key = bc_private_key
-        try:
-            self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
-        except:
-            time.sleep(2)
-            self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
+        while True:
+            try:
+                self.bc_nonce = self.web3.eth.get_transaction_count(self.bc_account)
+            except:
+                print("error get_transaction_count")
+            else:
+                break
+            time.sleep(1)
         self.transaction_queue = queue.LifoQueue()
         self.sent_transaction_queue = queue.LifoQueue()
         self.total_gas_cost = 0
@@ -133,7 +136,6 @@ class ContractInterface:
             except:
                 print("error: ", function_name)
 
-
     def call_function(self, function_name: str, *args, **kwargs):
         """
         Calls a read-only function of the smart contract and returns its result.
@@ -161,8 +163,16 @@ class ContractInterface:
 
         def log_loop(event_filter, event_handler, poll_interval):
             while True:
-                for event in event_filter.get_new_entries():
-                    event_handler(event, event["args"])
+                try:
+                    events = event_filter.get_new_entries()
+                except:
+                    print("re_generate filter")
+                    event_filter = getattr(
+                        self.contract.events, event_name
+                    ).create_filter(fromBlock="0x0")
+                else:
+                    for event in events:
+                        event_handler(event, event["args"])
                 time.sleep(poll_interval)
 
         # 创建事件过滤器
@@ -171,11 +181,12 @@ class ContractInterface:
                 event_filter = getattr(self.contract.events, event_name).create_filter(
                     fromBlock="0x0"
                 )
+                time.sleep(1)
             except:
                 print("event_filter create error")
             else:
-                break
-            time.sleep(1)
+                if event_filter and hasattr(event_filter, "filter_id"):
+                    break
 
         if is_async:
             worker = Thread(
