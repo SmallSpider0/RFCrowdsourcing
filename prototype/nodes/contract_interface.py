@@ -101,8 +101,8 @@ class ContractInterface:
                     print(function_name, receipt)
                 else:
                     callback(function_name, receipt)
-            except:
-                print(function_name)
+            except Exception as e:
+                print(function_name, e)
 
     def __trans_submission_daemon(self):
         # 按请求顺序发送交易
@@ -133,8 +133,8 @@ class ContractInterface:
 
                 # 记录总gas开销
                 self.total_gas_cost += txn["gas"]
-            except Exception:
-                print("error: ", function_name, Exception.args)
+            except Exception as e:
+                print("error: ", function_name, e)
 
     def call_function(self, function_name: str, *args, **kwargs):
         """

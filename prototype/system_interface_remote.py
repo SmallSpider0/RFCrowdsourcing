@@ -415,8 +415,8 @@ if __name__ == "__main__":
 
     # TODO：执行命令 配置内网穿透（服务器1上）
     SUBMITTER_NUM = 10
-    RANDOMIZER_NUM = 8
-    SUBTASK_NUM = 20
+    RANDOMIZER_NUM = 20
+    SUBTASK_NUM = 100
     RE_ENC_NUM = 2
 
     # 启动分布式系统
