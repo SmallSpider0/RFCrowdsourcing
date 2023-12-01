@@ -133,8 +133,8 @@ class ContractInterface:
 
                 # 记录总gas开销
                 self.total_gas_cost += txn["gas"]
-            except:
-                print("error: ", function_name)
+            except Exception:
+                print("error: ", function_name, Exception.args)
 
     def call_function(self, function_name: str, *args, **kwargs):
         """
