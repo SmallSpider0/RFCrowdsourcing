@@ -35,6 +35,7 @@ class SystemInterfaceRemote:
         re_enc_num,
     ):
         # 其它参数
+        self.config = Config()
         self.task_name = task_name
         self.server_callback = server_callback
         self.SUBMITTER_NUM = submitter_num
@@ -60,7 +61,6 @@ class SystemInterfaceRemote:
         self.RANDOMIZER_IP = []
 
         # 【通用参数】
-        self.config = Config()
         self.MANAGER_PORT_BASE = self.config.get_config("app").get("manager_port_base")
         self.ipfs_url = self.config.get_config("app").get("ipfs_url")
         self.web3_url = self.config.get_config("app").get("web3_url")
@@ -413,11 +413,10 @@ if __name__ == "__main__":
         if instruction == "event/TASK_END":
             print("event/TASK_END")
 
-    # TODO：测试数据不能上传github！！！！
     # TODO：执行命令 配置内网穿透（服务器1上）
-    SUBMITTER_NUM = 2
+    SUBMITTER_NUM = 10
     RANDOMIZER_NUM = 8
-    SUBTASK_NUM = 10
+    SUBTASK_NUM = 20
     RE_ENC_NUM = 2
 
     # 启动分布式系统
