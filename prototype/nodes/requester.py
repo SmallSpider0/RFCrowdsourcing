@@ -132,7 +132,9 @@ class Requester(Process, BaseNode):
         # 生成一个新的task 并返回
         # 如果没有新的subtask了则返回None
         subtask = self.task.get_subtasks()
+        st = time.time()
         sendLine(conn, str(subtask))  # 将任务序列化后发送
+        print("send time", time.time()-st)
 
     def __task_handler_daemon(self):
         while True:
