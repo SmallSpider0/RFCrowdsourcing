@@ -138,16 +138,18 @@ class SystemInterfaceRemote:
         self.__start_all_nodes()
 
     # 连接远程服务器并启动管理进程
-    def start_manager(self, i):
-        server = self.server_list[i]
-        log.info(f"【Client】deploying enviroment on server {server['name']}...")
-        # 环境部署在列表中第一台服务器上
-        if i == 0:
-            ret = ssh_command(server, self.envs_start_command)
-            print("env:", ret)
-        # 所有服务器都需要启动管理器
-        ret = ssh_command(server, self.manager_start_command)
-        print("manager", ret)
+    def start_manager(self):
+        for i in range(len(self.server_list)):
+            server = self.server_list[i]
+            log.info(f"【Client】deploying enviroment on server {server['name']}...")
+            # 环境部署在列表中第一台服务器上
+            if i == 0:
+                ret = ssh_command(server, self.envs_start_command)
+                #print("env:", ret)
+            else:
+                # 所有服务器都需要启动管理器
+                ret = ssh_command(server, self.manager_start_command)
+                #print("manager", ret)
 
     def call_requester(self, data, need_ret=True):
         def handler(conn):
@@ -179,14 +181,6 @@ class SystemInterfaceRemote:
         return connect_to(
             handler, self.SUBMITTER_SERVING_PORT_BASE + id, self.SUBMITTER_IP
         )
-
-    # def stop(self):
-    #     self.requester.stop()
-    #     for randomizer in self.randomizers:
-    #         randomizer.stop()
-    #     for submitter in self.submitters:
-    #         submitter.stop()
-    #     log.info(f"【Client】all nodes stoped  ...")
 
     def __server_start(self):
         def server(conn, addr):
@@ -409,9 +403,11 @@ class SystemInterfaceRemote:
 
 if __name__ == "__main__":
 
+    st = time.time()
     def server(instruction, conn, addr):
         if instruction == "event/TASK_END":
             print("event/TASK_END")
+            print("dur", time.time()-st)
 
     # TODO：执行命令 配置内网穿透（服务器1上）
     SUBMITTER_NUM = 10
@@ -428,8 +424,8 @@ if __name__ == "__main__":
         SUBTASK_NUM,
         RE_ENC_NUM
     )
-    # system.start_manager(0)
+    system.start_manager()
     system.run()
 
-    for id in range(SUBMITTER_NUM):
-        system.call_submitter(id, "start", False)
+    # for id in range(SUBMITTER_NUM):
+    #     system.call_submitter(id, "start", False)
