@@ -26,7 +26,7 @@ app:
 client:
   ip: "121.41.37.49"
   # 【服务端口】：用于实验时获取数据的服务端口
-  serving_port: 33333
+  serving_port: 44444
   # 【启动manager使用的命令】
   manager_start_command: "docker run -d --name manager --net=host xzc2034222/rf-crowdsourcing-manager:amd64"
   # 【启动envs使用的命令】
