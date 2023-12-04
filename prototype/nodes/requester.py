@@ -122,7 +122,7 @@ class Requester(Process, BaseNode):
         # 3.启动任务获取服务
         threading.Thread(
             target=listen_on_port,
-            args=(self.__task_pull_server, self.task_pull_serving_port, False),
+            args=(self.__task_pull_server, self.task_pull_serving_port),
         ).start()
 
         # 4.启动奖励发放器，执行随机延迟的奖励发放
