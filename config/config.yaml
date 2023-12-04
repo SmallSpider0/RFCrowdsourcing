@@ -8,9 +8,9 @@ app:
   # 【日志级别】：debug、info、error
   loglevel: info
   # 【IPFS服务url】：本地私有部署IPFS
-  ipfs_url: /ip4/116.62.176.206/tcp/5001
+  ipfs_url: /ip4/114.55.233.117/tcp/5001
   # 【web3服务url】：HTTP接口地址
-  web3_url: http://116.62.176.206:18545
+  web3_url: http://114.55.233.117:18545
   # 【测试账户】测试账户地址和私钥列表
   account_path: "config/bc_keys.json"
   # 【测试服务器】
@@ -24,7 +24,7 @@ app:
 
 # 实验时用于控制系统的的客户端
 client:
-  ip: "121.41.37.49"
+  ip: "114.55.55.90"
   # 【服务端口】：用于实验时获取数据的服务端口
   serving_port: 44444
   # 【启动manager使用的命令】

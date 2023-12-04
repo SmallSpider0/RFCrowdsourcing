@@ -15,8 +15,9 @@ from prototype.task.task_interface import SubTaskInterface
 # 系统库
 import threading
 import random
+from multiprocessing import Process
 
-class Submitter(BaseNode):
+class Submitter(BaseNode, Process):
     # 构造函数
     def __init__(
         self,
@@ -35,6 +36,7 @@ class Submitter(BaseNode):
         subtask_cls: SubTaskInterface,
         id,
     ):
+        Process.__init__(self)
         self.init_paras = {
             "client_port": client_port,
             "client_ip": client_ip,
@@ -75,7 +77,7 @@ class Submitter(BaseNode):
         )
 
     # 外部控制接口启动
-    def start(self):
+    def run(self):
         # 初始化
         self.__my_init()
 
