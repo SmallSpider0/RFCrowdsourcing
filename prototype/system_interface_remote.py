@@ -137,19 +137,22 @@ class SystemInterfaceRemote:
         # 7.与各服务器管理进程通信，启动所有节点的守护程序
         self.__start_all_nodes()
 
-    # 连接远程服务器并启动管理进程
+    # 部署区块链环境
+    def start_envs(self):
+        server = self.server_list[0]
+        log.info(f"【Client】deploying enviroment on server {server['name']}...")
+        # 环境部署在列表中第一台服务器上
+        ret = ssh_command(server, self.envs_start_command)
+        log.info(f"【Client】enviroment deployed success...")
+
+    # 连接远程服务器并启动管理进程    
     def start_manager(self):
-        for i in range(len(self.server_list)):
-            server = self.server_list[i]
-            log.info(f"【Client】deploying enviroment on server {server['name']}...")
-            # 环境部署在列表中第一台服务器上
-            if i == 0:
-                ret = ssh_command(server, self.envs_start_command)
-                #print("env:", ret)
-            else:
-                # 所有服务器都需要启动管理器
-                ret = ssh_command(server, self.manager_start_command)
-                #print("manager", ret)
+        for server in self.server_list[1:]:
+            log.info(f"【Client】deploying manager on server {server['name']}...")
+            # 所有服务器都需要启动管理器
+            ret = ssh_command(server, self.manager_start_command)
+            #print("manager", ret)
+        log.info(f"【Client】manager deployed success...")
 
     def call_requester(self, data, need_ret=True):
         def handler(conn):
@@ -208,16 +211,16 @@ class SystemInterfaceRemote:
         # 基础环境，包括私有链+IPFS
 
         # 【分配】Requester（一台服务器，为了体现轻量性，限制只使用一个CPU核心）
-        self.server_list[0]["role"] = ("Requester", 1)
-        self.REQUESTER_IP = self.server_list[0]["ip"]
+        self.server_list[1]["role"] = ("Requester", 1)
+        self.REQUESTER_IP = self.server_list[1]["ip"]
 
         # 【分配】Submitter（一台服务器，模拟所有的submitter）
-        self.server_list[1]["role"] = ("Submitter", self.SUBMITTER_NUM)
-        self.SUBMITTER_IP = self.server_list[1]["ip"]
+        self.server_list[2]["role"] = ("Submitter", self.SUBMITTER_NUM)
+        self.SUBMITTER_IP = self.server_list[2]["ip"]
 
         # 【分配】Randomizer（分布在多台服务器上（每个节点独享一个CPU核心），【并模拟网络延迟】）
         assignd = 0
-        for server in self.server_list[2:]:
+        for server in self.server_list[3:]:
             if assignd + server["cpu_cores"] <= self.RANDOMIZER_NUM:
                 cnt = server["cpu_cores"]
                 server["role"] = ("Randomizer", cnt)
@@ -236,7 +239,7 @@ class SystemInterfaceRemote:
         randomizer_id = 0
         for server in self.server_list:
             if not "role" in server:
-                break
+                continue
             role = server["role"]
             # 【Requester】
             if role[0] == "Requester":
@@ -282,6 +285,7 @@ class SystemInterfaceRemote:
         # ------------------
         # 合约部署
         # ------------------
+        log.info(f"【Client】deploying smart contract ...")
         contract_address, contract_abi = deploy_smart_contract(
             "CrowdsourcingContract",
             self.web3_url,
@@ -290,6 +294,7 @@ class SystemInterfaceRemote:
             self.SUBTASK_NUM,
             self.RE_ENC_NUM,
         )
+        log.info(f"【Client】smart contract success deployed...")
         return contract_address, contract_abi
 
     def __init_all_nodes(
@@ -427,5 +432,5 @@ if __name__ == "__main__":
     system.start_manager()
     system.run()
 
-    # for id in range(SUBMITTER_NUM):
-    #     system.call_submitter(id, "start", False)
+    for id in range(SUBMITTER_NUM):
+        system.call_submitter(id, "start", False)
