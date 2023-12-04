@@ -145,8 +145,9 @@ class CIFAR10Task(TaskInterface):
 
     def __create_subtasks(self, num):
         splited_tasks = split_array(self.data, num)
+        # 模拟发送任务 以节省流量
         return [
-            CIFAR10Subtask(i, self.description + f" - Subtask {i}", splited_tasks[i])
+            CIFAR10Subtask(i, self.description + f" - Subtask {i}", [0 for _ in range(len(splited_tasks[i]))])
             for i in range(num)
         ]
 
