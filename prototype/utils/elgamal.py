@@ -341,9 +341,9 @@ class ElGamal:
     def Decrypt(cls, sk, ciphertexts):
         if type(ciphertexts) == ElGamal.Ciphertext:
             # s = cr^x mod p
-            s = pow(c.cr, sk.x, sk.p)
+            s = pow(ciphertexts.cr, sk.x, sk.p)
             # plaintext integer = cm*s^-1 mod p
-            plain_int = (c.cm * pow(s, sk.p - 2, sk.p)) % sk.p
+            plain_int = (ciphertexts.cm * pow(s, sk.p - 2, sk.p)) % sk.p
             return plain_int
         else:
             z = []

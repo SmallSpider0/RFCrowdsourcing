@@ -52,12 +52,15 @@ class ElgamalEncryptor:
     def reEncrypt(self, ciphertexts, alpha_prime=None):
         if self.pk is None:
             return False
-        ret = []
         # 对每个密文对象运行重加密
-        for ciphertext in ciphertexts:
-            ret.append(ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime))
+        if type(ciphertexts) == list:
+            ret = []
+            for ciphertext in ciphertexts:
+                ret.append(ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime))
+        else:
+            ret = ElGamal.ReEncrypt(self.pk, ciphertexts, alpha_prime)
         return ret
-    
+
     def genAlpha(self):
         return ElGamal.genAlpha(self.pk.p)
 
@@ -82,22 +85,29 @@ class ElgamalEncryptor:
 
     # 验证重加密交互式证明模拟器的模拟结果
     def verifyReEncrypt(self, new_ciphertexts, ciphertexts, e_prime, c, beta):
-        if len(new_ciphertexts) != len(ciphertexts):
-            return False
-        for i in range(len(new_ciphertexts)):
+        def verify(new_ciphertext, ciphertext):
             # 模拟最终的验证过程
             # 检查E(0, beta)是否等于c * e * e'
             # 对于ElGamal密文，我们需要分别计算每个组件
-            e = new_ciphertexts[i] - ciphertexts[i]
+            e = new_ciphertext - ciphertext
             tmp = self.encrypt(0, beta)
             # 计算c * e * e' 的第一部分 (对应于ElGamal密文的cm)
             e1 = (pow(e.cm, c, self.pk.p) * e_prime.cm) % self.pk.p
             # 计算c * e * e' 的第二部分 (对应于ElGamal密文的cr)
             e2 = (pow(e.cr, c, self.pk.p) * e_prime.cr) % self.pk.p
             # 现在，我们将 E(0, beta) 的两部分与上面计算的两部分进行比较
-            if not tmp.cm == e1 and tmp.cr == e2:
+            return tmp.cm == e1 and tmp.cr == e2
+
+        if type(ciphertexts) == list:
+            if len(new_ciphertexts) != len(ciphertexts):
                 return False
-        return True
+            # 验证每个密文
+            for i in range(len(new_ciphertexts)):
+                if not verify(new_ciphertexts[i], ciphertexts[i]):
+                    return False
+            return True
+        else:
+            return verify(new_ciphertexts, ciphertexts)
 
 
 if __name__ == "__main__":
@@ -107,27 +117,30 @@ if __name__ == "__main__":
     # 首次运行前需要生成密钥对并保存
     # st = time.time()
     # ElgamalEncryptor.generateAndSaveKeys(
-    #     "tmp/keypairs/pk.pkl", "tmp/keypairs/sk.pkl", 256, 32
+    #     "tmp/pk.pkl", "tmp/sk.pkl", 256, 32
     # )
     # print(time.time() - st)
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
-    pk_file = "tmp/keypairs/pk.pkl"
-    sk_file = "tmp/keypairs/sk.pkl"
-    encryptor = ElgamalEncryptor(pk_file, sk_file)
+    pk_file = "tmp/pk.pkl"
+    sk_file = "tmp/sk.pkl"
+    with open(pk_file, "rb") as f:
+        public_key_str = pickle.load(f)
+    with open(sk_file, "rb") as f:
+        private_key_str = pickle.load(f)
+    encryptor = ElgamalEncryptor(public_key_str, private_key_str)
 
     def homo_test(encryptor):
         for _ in range(10000):
-            msg = randrange(1,10000)
+            msg = randrange(1, 10000)
             ciphertext = encryptor.encrypt(msg)
             alpha_prime = encryptor.genAlpha()
             new_ciphertext = encryptor.reEncrypt(ciphertext, alpha_prime)
-            
+
             try:
                 c1 = -new_ciphertext
             except:
                 print(msg)
-
 
     def performance_test(encryptor):
         results = [[] for _ in range(4)]
@@ -170,29 +183,28 @@ if __name__ == "__main__":
     def base_test(encryptor):
         # 1.加密
         msg = 1234
-        ciphertexts = encryptor.encrypt(msg.to_bytes(8, byteorder='big', signed=True))
-        #print("Encrypted:", ciphertexts)
+        ciphertexts = encryptor.encrypt(msg.to_bytes(8, byteorder="big", signed=True))
+        # print("Encrypted:", ciphertexts)
 
         # ciphertext_file = "tmp/ciphertext.pkl"
         # with open(ciphertext_file, "wb") as f:
         #     pickle.dump(str(ciphertexts), f)
 
-
         # # 2.重加密
         alpha_prime = encryptor.genAlpha()
         new_ciphertexts = encryptor.reEncrypt(ciphertexts, alpha_prime)
-        #print("Re_encrypted:", new_ciphertexts)
+        # print("Re_encrypted:", new_ciphertexts)
 
         # # 3.同态性质
         # cipher_0 = new_ciphertexts[0] - ciphertexts[0]
 
         # # 4.解密
         decrypted = encryptor.decrypt(ciphertexts)
-        #decrypted_re = encryptor.decrypt(new_ciphertexts)
+        # decrypted_re = encryptor.decrypt(new_ciphertexts)
         print(decrypted)
         # decrypted_ho = encryptor.decrypt(cipher_0)
-        print("Decrypted:", int.from_bytes(decrypted, byteorder='big', signed=True))
-        #print("Decrypted_re:", list(decrypted_re))
+        print("Decrypted:", int.from_bytes(decrypted, byteorder="big", signed=True))
+        # print("Decrypted_re:", list(decrypted_re))
         # print("Decrypted_ho:", decrypted_ho)
 
         # # 5.重加密证明
