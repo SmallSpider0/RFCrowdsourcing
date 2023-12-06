@@ -131,5 +131,7 @@ def deploy_smart_contract(contract_name, web3_url, account, private_key, *args):
     # 获取交易收据以确认
     tx_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
 
+    print(f"deply {contract_name} gasUsed", tx_receipt["gasUsed"])
+
     # 获取合约地址
     return (tx_receipt["contractAddress"], contract_interface["abi"])

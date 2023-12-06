@@ -3,7 +3,7 @@ import os
 import sys
 
 current_dir = os.path.dirname(__file__)
-parent_dir = os.path.dirname(current_dir)
+parent_dir = os.path.dirname(os.path.dirname(current_dir))
 sys.path.append(parent_dir)
 
 # 基于顶层包的import
@@ -132,6 +132,7 @@ class ContractInterface:
                 self.bc_nonce += 1
 
                 # 记录总gas开销
+                print(function_name, txn["gas"])
                 self.total_gas_cost += txn["gas"]
             except Exception as e:
                 print("error: ", function_name, e)
@@ -201,37 +202,38 @@ class ContractInterface:
 
 if __name__ == "__main__":
     # 测试参数定义
-    provider_url = "http://127.0.0.1:8545"
+    provider_url = "http://127.0.0.1:18545"
     account = "0x9A82f98d6083c30632A22a9e93a9dfA8B054C929"
     private_key = "0x11408f483264dcc0b831b0b95ffbfddc19d9a3ae98fc289baa5592d5b1e1d331"
 
     # 合约部署
-    from utils.tools import deploy_smart_contract
+    from prototype.utils.tools import deploy_smart_contract
 
     contract_address, contract_abi = deploy_smart_contract(
         "SimpleContract", provider_url, account, private_key
     )
 
-    # 合约对象初始化
-    contract_interface = ContractInterface(
-        provider_url, contract_address, contract_abi, account, private_key
-    )
 
-    # 监听事件
-    def handle_integer_received(raw_event, args):
-        print("IntegerReceived", args["value"])
+    # # 合约对象初始化
+    # contract_interface = ContractInterface(
+    #     provider_url, contract_address, contract_abi, account, private_key
+    # )
 
-    contract_interface.listen_for_events(
-        "IntegerReceived", handle_integer_received, is_async=True
-    )
+    # # 监听事件
+    # def handle_integer_received(raw_event, args):
+    #     print("IntegerReceived", args["value"])
 
-    time.sleep(1)
+    # contract_interface.listen_for_events(
+    #     "IntegerReceived", handle_integer_received, is_async=True
+    # )
 
-    # 发送交易 并获取回执
-    def callback(function_name, receipt):
-        print(function_name, receipt)
+    # time.sleep(1)
 
-    contract_interface.send_transaction_receipt(callback, "receiveInteger", 123)
+    # # 发送交易 并获取回执
+    # def callback(function_name, receipt):
+    #     print(function_name, receipt)
 
-    lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
-    print("lastReceivedInteger", lastReceivedInteger)
+    # contract_interface.send_transaction_receipt(callback, "receiveInteger", 123)
+
+    # lastReceivedInteger = contract_interface.call_function("lastReceivedInteger")
+    # print("lastReceivedInteger", lastReceivedInteger)

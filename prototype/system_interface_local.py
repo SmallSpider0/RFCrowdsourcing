@@ -149,6 +149,9 @@ class SystemInterfaceLocal:
         for randomizer in self.randomizers:
             randomizer.start()
 
+        for submitter in self.submitters:
+            submitter.start()
+
         # 等待randomizer注册交易执行完成
         log.info(f"【Client】waiting for randomizers registering ...")
         while True:
@@ -156,9 +159,6 @@ class SystemInterfaceLocal:
                 break
             time.sleep(1)
         log.info(f"【Client】all randomizers registered")
-
-        for submitter in self.submitters:
-            submitter.start()
 
     def __assign_bc_accounts(self):
         # ------------------
@@ -317,11 +317,11 @@ if __name__ == "__main__":
             print("event/TASK_END")
 
     # 启动分布式系统
-    task = CIFAR10Task("CIFAR10 tagging", 100)
+    task = CIFAR10Task("CIFAR10 tagging", 5)
     system = SystemInterfaceLocal(
-        task, server, submitter_num=10, randomizer_num=20, subtask_num=100, re_enc_num=3
+        task, server, submitter_num=1, randomizer_num=1, subtask_num=5, re_enc_num=1
     )
     system.run()
 
-    for id in range(10):
+    for id in range(1):
         system.call_submitter(id, "start", False)
