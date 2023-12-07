@@ -8,9 +8,9 @@ app:
   # 【日志级别】：debug、info、error
   loglevel: info
   # 【IPFS服务url】：本地私有部署IPFS
-  ipfs_url: /ip4/10.12.46.33/tcp/5001
+  ipfs_url: /ip4/121.41.224.77/tcp/5001
   # 【web3服务url】：HTTP接口地址
-  web3_url: http://10.12.46.33:18545
+  web3_url: http://121.41.224.77:18545
   # 【测试账户】测试账户地址和私钥列表
   account_path: "config/bc_keys.json"
   # 【测试服务器】
@@ -24,9 +24,13 @@ app:
 
 # 实验时用于控制系统的的客户端
 client:
-  ip: "10.12.46.19"
+  ip: "47.98.191.190"
   # 【服务端口】：用于实验时获取数据的服务端口
   serving_port: 33333
+  # 【更新envs使用的命令】
+  envs_update: "docker ps | grep -q 'envs' && docker stop envs && docker rm envs && docker rmi xzc2034222/rf-crowdsourcing-envs:amd64"
+  # 【更新manager使用的命令】
+  manager_update: "docker ps | grep -q 'manager' && docker stop manager && docker rm manager && docker rmi xzc2034222/rf-crowdsourcing-manager:amd64"
   # 【启动manager使用的命令】
   manager_start_command: "docker ps | grep -q 'manager' && docker restart manager || (docker ps -a | grep -q 'manager' && docker start manager || docker run -d --name manager --net=host xzc2034222/rf-crowdsourcing-manager:amd64)"
   # 【启动envs使用的命令】

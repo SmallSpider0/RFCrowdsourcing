@@ -39,10 +39,11 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, port):
         port,
     )
     system.start_envs()
-    system.start_manager()
+    system.start_manager(True)
     system.run()
     for id in range(SUBMITTER_NUM):
         system.call_submitter(id, "start", False)
+    print("started")
 
     while True:
         if ret is not None:
@@ -102,19 +103,13 @@ paras = [
     [1, 50, 50, 12],
 ]
 
+paras = [
+    [1,10,10,1]
+]
+
 port = 33333
 for p in paras:
     for _ in range(1):
         ret = eval(p[0], p[1], p[2], p[3], port)
         with open("evaluation/results/results.txt", "a") as f:
             f.write((",".join([str(num) for num in p]) + ":" + str(ret) + "\n"))
-
-# 设定[1,5,10,(1,2,3)]
-# [33.07875370979309, 50.63353705406189, 67.95407605171204]
-# [33.04142427444458, 50.572059869766235, 68.0313081741333]
-# [32.85447812080383, 50.49394416809082, 68.28303909301758]
-
-# 设定[1,3,10,(1,2,3)]
-# [34.67126822471619, 51.68482184410095, 62.10559916496277]
-# [33.24574899673462, 50.554965019226074, 68.2726571559906]
-# [33.85741472244263, 50.4607789516449, 68.09521412849426]

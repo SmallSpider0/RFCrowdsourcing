@@ -151,17 +151,33 @@ class SystemInterfaceRemote:
 
     # 连接远程服务器并启动管理进程
     def start_manager(self, local=False):
+        def ssh_command_with_thread(server, command):
+            # 这里执行 SSH 命令
+            ret = ssh_command(server, command)
+
+        threads = []
         if local:
-            log.info(f"【Client】deploying manager on local server ...")
+            log.info("deploying manager on local server ...")
             server = self.server_list[0]
-            ret = ssh_command(server, self.manager_start_command)
+            thread = threading.Thread(target=ssh_command_with_thread, args=(server, self.manager_start_command))
+            threads.append(thread)
+            for server in self.server_list:
+                server["ip"] = self.server_list[0]["ip"]
         else:
             for server in self.server_list[1:]:
-                log.info(f"【Client】deploying manager on server {server['name']}...")
-                # 所有服务器都需要启动管理器
-                ret = ssh_command(server, self.manager_start_command)
-                # print("manager", ret)
-        log.info(f"【Client】manager deployed success...")
+                log.info(f"deploying manager on server {server['name']}...")
+                thread = threading.Thread(target=ssh_command_with_thread, args=(server, self.manager_start_command))
+                threads.append(thread)
+
+        # 启动所有线程
+        for thread in threads:
+            thread.start()
+
+        # 等待所有线程完成
+        for thread in threads:
+            thread.join()
+
+    log.info("manager deployed success...")
 
     def call_requester(self, data, need_ret=True):
         def handler(conn):
