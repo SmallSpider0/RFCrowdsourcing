@@ -39,7 +39,7 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, port):
         port,
     )
     system.start_envs()
-    system.start_manager(True)
+    system.start_manager()
     system.run()
     for id in range(SUBMITTER_NUM):
         system.call_submitter(id, "start", False)
@@ -95,7 +95,7 @@ paras = [
     [1, 40, 50, 6],
     [1, 40, 50, 9],
     [1, 40, 50, 12],
-    
+
     [1, 50, 50, 3],
     [1, 50, 50, 6],
     [1, 50, 50, 9],

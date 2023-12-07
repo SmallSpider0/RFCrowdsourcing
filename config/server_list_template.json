@@ -1,0 +1,42 @@
+[
+  {
+    "name": "ENV",
+    "ip": "10.12.46.33",
+    "user": "b515",
+    "password": "LFBYZXLu22k69BMg",
+    "cpu_cores": 4,
+    "manager_port": 7777
+  },
+  {
+    "name": "RF-2",
+    "ip": "10.12.46.33",
+    "user": "root",
+    "password": "afd_neu1VZC@hve3vcx",
+    "cpu_cores": 4,
+    "manager_port": 7777
+  },
+  {
+    "name": "RF-3",
+    "ip": "10.12.46.33",
+    "user": "root",
+    "password": "afd_neu1VZC@hve3vcx",
+    "cpu_cores": 4,
+    "manager_port": 7777
+  },
+  {
+    "name": "RF-4",
+    "ip": "10.12.46.33",
+    "user": "root",
+    "password": "afd_neu1VZC@hve3vcx",
+    "cpu_cores": 10,
+    "manager_port": 7777
+  },
+  {
+    "name": "RF-5",
+    "ip": "10.12.46.33",
+    "user": "root",
+    "password": "afd_neu1VZC@hve3vcx",
+    "cpu_cores": 10,
+    "manager_port": 7777
+  }
+]
