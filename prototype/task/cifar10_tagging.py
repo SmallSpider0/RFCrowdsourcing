@@ -35,12 +35,12 @@ class CIFAR10Answer(AnswerInterface):
         return True
 
     def encode(self):
-        encoded_bytes = bytes(''.join(str(num) for num in self.content), 'ascii')
+        encoded_bytes = bytes("".join(str(num) for num in self.content), "ascii")
         return bytearray(encoded_bytes)
 
     @classmethod
     def from_encoding(cls, encoded):
-        decoded_int_array = [int(char) for char in encoded.decode('ascii')]
+        decoded_int_array = [int(char) for char in encoded.decode("ascii")]
         return cls(decoded_int_array)
 
     @classmethod
@@ -147,9 +147,13 @@ class CIFAR10Task(TaskInterface):
         splited_tasks = split_array(self.data, num)
         # 模拟发送任务 以节省流量
         return [
-            CIFAR10Subtask(i, self.description + f" - Subtask {i}", [0 for _ in range(len(splited_tasks[i]))])
+            CIFAR10Subtask(
+                i,
+                self.description + f" - Subtask {i}",
+                [0 for _ in range(len(splited_tasks[i]))],
+            )
             for i in range(num)
-        ]
+        ] * 3
 
     def get_subtasks(self):
         with self.lock:
@@ -190,7 +194,7 @@ if __name__ == "__main__":
 
         # 评估答案
         indexes, answer = task.evaluation(answers)
-        #print(len(answer))
+        # print(len(answer))
         print(str(answer))
 
     test_task()
