@@ -107,6 +107,7 @@ class SystemInterfaceLocal:
         # 3.部署智能合约
         contract_address, contract_abi = self.__deploy_contract(requester_account)
         # 4.初始化所有节点
+        print("__init_all_nodes")
         self.requester, self.randomizers, self.submitters = self.__init_all_nodes(
             contract_address,
             contract_abi,
@@ -115,6 +116,7 @@ class SystemInterfaceLocal:
             submitter_accounts,
         )
         # 5.启动所有节点的守护程序
+        print("__start_all_nodes")
         self.__start_all_nodes()
 
     # def stop(self):

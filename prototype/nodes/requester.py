@@ -134,7 +134,7 @@ class Requester(Process, BaseNode):
         subtask = self.task.get_subtasks()
         st = time.time()
         sendLine(conn, str(subtask))  # 将任务序列化后发送
-        print("send time", time.time()-st)
+        # print("send time", time.time()-st)
 
     def __task_handler_daemon(self):
         while True:

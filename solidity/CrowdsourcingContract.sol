@@ -197,7 +197,7 @@ contract CrowdsourcingContract {
     function getSubTaskFinalResult(uint subTaskId) public view returns (SubTaskResult memory) {
         require(subTaskId < subTasks.length, "SubTask does not exist");
         SubTask storage subTask = subTasks[subTaskId];
-        require(subTask.isCompleted, "SubTask is not completed yet");
+        //require(subTask.isCompleted, "SubTask is not completed yet");
 
         return SubTaskResult({
             initialCommit: subTask.initialCommit,

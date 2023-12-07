@@ -33,6 +33,7 @@ class SystemInterfaceRemote:
         randomizer_num,
         subtask_num,
         re_enc_num,
+        client_port = None,
     ):
         # 其它参数
         self.config = Config()
@@ -60,6 +61,9 @@ class SystemInterfaceRemote:
         self.SUBMITTER_IP = None
         self.RANDOMIZER_IP = []
 
+        # 实验用参数
+        self.times = {}
+
         # 【通用参数】
         self.MANAGER_PORT_BASE = self.config.get_config("app").get("manager_port_base")
         self.ipfs_url = self.config.get_config("app").get("ipfs_url")
@@ -78,7 +82,7 @@ class SystemInterfaceRemote:
         self.envs_start_command = self.config.get_config("client").get(
             "envs_start_command"
         )
-        self.CLIENT_PORT = self.config.get_config("client").get("serving_port")
+        self.CLIENT_PORT = client_port or self.config.get_config("client").get("serving_port")
         self.CLIENT_IP = self.config.get_config("client").get("ip")
 
         # 【Requester】参数
@@ -145,13 +149,18 @@ class SystemInterfaceRemote:
         ret = ssh_command(server, self.envs_start_command)
         log.info(f"【Client】enviroment deployed success...")
 
-    # 连接远程服务器并启动管理进程    
-    def start_manager(self):
-        for server in self.server_list[1:]:
-            log.info(f"【Client】deploying manager on server {server['name']}...")
-            # 所有服务器都需要启动管理器
+    # 连接远程服务器并启动管理进程
+    def start_manager(self, local=False):
+        if local:
+            log.info(f"【Client】deploying manager on local server ...")
+            server = self.server_list[0]
             ret = ssh_command(server, self.manager_start_command)
-            #print("manager", ret)
+        else:
+            for server in self.server_list[1:]:
+                log.info(f"【Client】deploying manager on server {server['name']}...")
+                # 所有服务器都需要启动管理器
+                ret = ssh_command(server, self.manager_start_command)
+                # print("manager", ret)
         log.info(f"【Client】manager deployed success...")
 
     def call_requester(self, data, need_ret=True):
@@ -194,11 +203,13 @@ class SystemInterfaceRemote:
             # 处理用户请求
             else:
                 self.server_callback(instruction, conn, addr)
+                if instruction == "event/TASK_END":
+                    return "STOP"
 
         # 启动服务器
         threading.Thread(
             target=listen_on_port,
-            args=(server, self.CLIENT_PORT),
+            args=(server, self.CLIENT_PORT, False),
         ).start()
 
     def __assign_node_to_server(self):
@@ -270,6 +281,7 @@ class SystemInterfaceRemote:
                 break
             time.sleep(1)
         log.info(f"【Client】all randomizers registered")
+        self.times["inited"] = time.time()
 
     # 与管理进程进行通信
     def __call_manager(self, instructioin, data, server):
@@ -407,12 +419,12 @@ class SystemInterfaceRemote:
 
 
 if __name__ == "__main__":
-
     st = time.time()
+
     def server(instruction, conn, addr):
         if instruction == "event/TASK_END":
             print("event/TASK_END")
-            print("dur", time.time()-st)
+            print("dur", time.time() - st)
 
     # TODO：执行命令 配置内网穿透（服务器1上）
     SUBMITTER_NUM = 10
@@ -422,12 +434,7 @@ if __name__ == "__main__":
 
     # 启动分布式系统
     system = SystemInterfaceRemote(
-        "CIFAR10Task",
-        server,
-        SUBMITTER_NUM,
-        RANDOMIZER_NUM,
-        SUBTASK_NUM,
-        RE_ENC_NUM
+        "CIFAR10Task", server, SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM
     )
     system.start_manager()
     system.run()

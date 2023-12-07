@@ -62,7 +62,7 @@ class CIFAR10Subtask(SubTaskInterface):
 
     def execute(self):
         """执行单个子任务"""
-        time.sleep(0.5)  # 模拟操作时间
+        # time.sleep(0.5)  # 模拟操作时间
         ret = [random.randint(0, 9) for _ in range(len(self.content))]  # 这里返回随机值为例
         return CIFAR10Answer(ret)
 

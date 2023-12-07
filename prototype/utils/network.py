@@ -67,7 +67,9 @@ def listen_on_port(handler, port, isAsync=True):
                 ).start()
             # 串行处理
             else:
-                handler(conn, addr)
+                ret = handler(conn, addr)
+                if ret == "STOP":
+                    break
 
 
 def connect_to(handler, port, ip="localhost"):

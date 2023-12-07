@@ -13,10 +13,10 @@ COPY envs/mychain ./envs/mychain
 COPY .build/geth ./envs/mychain/bin/geth
 
 # 初始化
-COPY ./manage_env.sh .
+COPY ./start_env.sh .
 RUN mkdir ./envs/logs
 RUN mkdir ./tmp
-RUN ./manage_env.sh init
+RUN ./start_env.sh init
 
 # 定义容器启动时执行的命令
-CMD ["./manage_env.sh", "up"]
+CMD ["./start_env.sh", "up"]

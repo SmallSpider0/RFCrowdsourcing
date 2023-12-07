@@ -132,7 +132,7 @@ class ContractInterface:
                 self.bc_nonce += 1
 
                 # 记录总gas开销
-                print(function_name, txn["gas"])
+                # print(function_name, txn["gas"])
                 self.total_gas_cost += txn["gas"]
             except Exception as e:
                 print("error: ", function_name, e)

@@ -15,7 +15,7 @@ case "$1" in
         cd envs/mychain && ./1-node1.sh && ./1-node2.sh  && ./1-node3.sh
         cd ../ipfs && ./1-start.sh
         echo "Environment startup successful"
-        tail -f /dev/null
+        tail -f ../logs/bc_node1
         ;;
     down)
         # 停止环境脚本内容
