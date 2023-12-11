@@ -156,7 +156,7 @@ class SystemInterfaceRemote:
 
         threads = []
         if local:
-            log.info("deploying manager on local server ...")
+            log.info("【Client】deploying manager on local server ...")
             server = self.server_list[0]
             thread = threading.Thread(
                 target=ssh_command_with_thread,
@@ -167,7 +167,7 @@ class SystemInterfaceRemote:
                 server["ip"] = self.server_list[0]["ip"]
         else:
             for server in self.server_list[1:]:
-                log.info(f"deploying manager on server {server['name']}...")
+                log.info(f"【Client】deploying manager on server {server['name']}...")
                 thread = threading.Thread(
                     target=ssh_command_with_thread,
                     args=(server, self.manager_start_command),

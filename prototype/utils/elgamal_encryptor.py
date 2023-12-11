@@ -12,12 +12,15 @@ from utils.elgamal import ElGamal
 # 系统库
 import pickle
 from Crypto.Random.random import randrange
+from multiprocessing import Lock
 
 
 class ElgamalEncryptor:
     # 构造函数 输入公私钥文件
     def __init__(self, public_key_str, private_key_str=None):
         self.pk = ElGamal.PublicKey.from_str(public_key_str)
+        self.totaltime = 0
+        self.totaltimeLock = Lock()
         if private_key_str != None:
             self.sk = ElGamal.PrivateKey.from_str(private_key_str)
 
@@ -40,25 +43,39 @@ class ElgamalEncryptor:
     def encrypt(self, msg, alpha=None):
         if self.pk is None:
             return False
-        return ElGamal.Encrypt(self.pk, msg, alpha)
+        st = time.time()
+        ret = ElGamal.Encrypt(self.pk, msg, alpha)
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
+        return ret
 
     # 用私钥解密
     def decrypt(self, ciphertexts):
         if self.sk is None:
             return False
-        return ElGamal.Decrypt(self.sk, ciphertexts)
+        st = time.time()
+        ret = ElGamal.Decrypt(self.sk, ciphertexts)
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
+        return ret
 
     # 用公钥重加密
     def reEncrypt(self, ciphertexts, alpha_prime=None):
         if self.pk is None:
             return False
         # 对每个密文对象运行重加密
+        st = time.time()
         if type(ciphertexts) == list:
             ret = []
             for ciphertext in ciphertexts:
                 ret.append(ElGamal.ReEncrypt(self.pk, ciphertext, alpha_prime))
         else:
             ret = ElGamal.ReEncrypt(self.pk, ciphertexts, alpha_prime)
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
         return ret
 
     def genAlpha(self):
@@ -67,20 +84,32 @@ class ElgamalEncryptor:
     # 重加密证明通信内容 1/3
     def proveReEncrypt_1(self):
         # 1.证明者发送e'
+        st = time.time()
         alpha_tmp = randrange(self.pk.p - 1)
         e_prime = self.encrypt(0, alpha_tmp)  # e' = E(0, alpha')
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
         return e_prime, alpha_tmp
 
     # 重加密证明通信内容 2/3
     def proveReEncrypt_2(self):
         # 2.验证者发送一个挑战c
+        st = time.time()
         c = randrange(self.pk.p - 1)
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
         return c
 
     # 重加密证明通信内容 3/3
     def proveReEncrypt_3(self, c, alpha, alpha_tmp) -> int:
         # 3.证明者基于挑战c构造并发送beta
+        st = time.time()
         beta = (c * alpha + alpha_tmp) % (self.pk.p - 1)  # 计算响应beta
+        end = time.time()
+        with self.totaltimeLock:
+            self.totaltime += end - st
         return beta
 
     # 验证重加密交互式证明模拟器的模拟结果
@@ -89,12 +118,16 @@ class ElgamalEncryptor:
             # 模拟最终的验证过程
             # 检查E(0, beta)是否等于c * e * e'
             # 对于ElGamal密文，我们需要分别计算每个组件
+            st = time.time()
             e = new_ciphertext - ciphertext
             tmp = self.encrypt(0, beta)
             # 计算c * e * e' 的第一部分 (对应于ElGamal密文的cm)
             e1 = (pow(e.cm, c, self.pk.p) * e_prime.cm) % self.pk.p
             # 计算c * e * e' 的第二部分 (对应于ElGamal密文的cr)
             e2 = (pow(e.cr, c, self.pk.p) * e_prime.cr) % self.pk.p
+            end = time.time()
+            with self.totaltimeLock:
+                self.totaltime += end - st
             # 现在，我们将 E(0, beta) 的两部分与上面计算的两部分进行比较
             return tmp.cm == e1 and tmp.cr == e2
 
@@ -122,8 +155,8 @@ if __name__ == "__main__":
     # print(time.time() - st)
 
     # 使用保存的密钥对初始化ElgamalEncryptor实例
-    pk_file = "tmp/pk.pkl"
-    sk_file = "tmp/sk.pkl"
+    pk_file = "tmp/keypairs/pk2048.pkl"
+    sk_file = "tmp/keypairs/sk2048.pkl"
     with open(pk_file, "rb") as f:
         public_key_str = pickle.load(f)
     with open(sk_file, "rb") as f:
@@ -217,3 +250,4 @@ if __name__ == "__main__":
         print(f"Reencryption Proof Valid: {valid}")
 
     base_test(encryptor)
+    print(encryptor.totaltime)

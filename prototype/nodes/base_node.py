@@ -19,7 +19,7 @@ import pickle
 
 
 # 节点的基类（Requester、Randomizer、Submitter）
-class BaseNode():
+class BaseNode:
     def __init__(
         self,
         client_port,
@@ -51,9 +51,11 @@ class BaseNode():
         self.client_ip = client_ip
 
     # 发送事件通知客户端
-    def emit_event(self, event):
+    def emit_event(self, event, data=None):
         def handler(conn):
             sendLine(conn, f"event/{event}")
+            if data is not None:
+                sendLine(conn, data)
             conn.close()
 
         connect_to(handler, self.client_port, self.client_ip)

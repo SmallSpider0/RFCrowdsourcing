@@ -245,7 +245,7 @@ class Requester(Process, BaseNode):
 
         indexes, answer = self.task.evaluation(answers)
         log.info(f"【Requester】final answer generated {answer} ")
-        self.emit_event("TASK_END")
+        self.emit_event("TASK_END", self.encryptor.totaltime)
 
 
 if __name__ == "__main__":

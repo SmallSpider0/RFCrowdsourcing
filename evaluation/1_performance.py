@@ -8,6 +8,7 @@ sys.path.append(parent_dir)
 
 # 基于顶层包的import
 from prototype.system_interface_remote import SystemInterfaceRemote
+from prototype.utils.network import recvLine
 
 # 系统库
 import time
@@ -26,6 +27,8 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
 
     def server(instruction, conn, addr):
         if instruction == "event/TASK_END":
+            data = recvLine(conn)
+            print("elgamal_time", data)
             print("event/TASK_END")
             global ret
             ret = time.time() - system.times["inited"]
@@ -87,15 +90,16 @@ paras = [
     [10, 10, 25, 4],
     [10, 10, 25, 6],
     [10, 10, 25, 8],
-
 ]
 
-for p in paras:
-    for key_len in [2048]:
-        ret = eval(p[0], p[1], p[2], p[3], key_len)
-        with open("evaluation/results/results.txt", "a") as f:
-            f.write(
-                str(key_len)
-                + ","
-                + (",".join([str(num) for num in p]) + ":" + str(ret) + "\n")
-            )
+eval(10, 10, 25, 2, 512)
+
+# for p in paras:
+#     for key_len in [2048]:
+#         ret = eval(p[0], p[1], p[2], p[3], key_len)
+#         with open("evaluation/results/results.txt", "a") as f:
+#             f.write(
+#                 str(key_len)
+#                 + ","
+#                 + (",".join([str(num) for num in p]) + ":" + str(ret) + "\n")
+#             )
