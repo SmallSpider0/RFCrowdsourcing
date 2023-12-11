@@ -3,10 +3,7 @@ pragma solidity ^0.8.19;
 
 contract CrowdsourcingContract {
     // 定义事件
-    event SubTaskAnswerSubmitted(
-        uint32 subTaskId,
-        string filehash
-    );
+    event SubTaskAnswerSubmitted(uint32 subTaskId, string filehash);
 
     event SubTaskAnswerEncrypted(
         uint32 subTaskId,
@@ -105,10 +102,11 @@ contract CrowdsourcingContract {
         subTask.isInited = true;
         subTask.initialCommit = commit;
         subTask.initialFilehash = filehash;
-        emit SubTaskAnswerSubmitted(
-            subTaskId,
-            filehash
-        );
+        emit SubTaskAnswerSubmitted(subTaskId, filehash);
+        if (requiredEncryptions == 0) {
+            subTask.isCompleted = true;
+            emit SubTaskEncryptionCompleted(subTaskId);
+        }
     }
 
     // 随机选择Randomizer的函数
@@ -194,17 +192,19 @@ contract CrowdsourcingContract {
     }
 
     // 获取子任务最终结果
-    function getSubTaskFinalResult(uint subTaskId) public view returns (SubTaskResult memory) {
+    function getSubTaskFinalResult(
+        uint subTaskId
+    ) public view returns (SubTaskResult memory) {
         require(subTaskId < subTasks.length, "SubTask does not exist");
         SubTask storage subTask = subTasks[subTaskId];
         //require(subTask.isCompleted, "SubTask is not completed yet");
 
-        return SubTaskResult({
-            initialCommit: subTask.initialCommit,
-            initialFilehash: subTask.initialFilehash,
-            encryptionResults: subTask.encryptionResults,
-            selectedRandomizers: subTask.selectedRandomizers
-        });
+        return
+            SubTaskResult({
+                initialCommit: subTask.initialCommit,
+                initialFilehash: subTask.initialFilehash,
+                encryptionResults: subTask.encryptionResults,
+                selectedRandomizers: subTask.selectedRandomizers
+            });
     }
-
 }
