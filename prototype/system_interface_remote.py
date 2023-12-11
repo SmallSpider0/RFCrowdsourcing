@@ -182,7 +182,7 @@ class SystemInterfaceRemote:
         for thread in threads:
             thread.join()
 
-    log.info("manager deployed success...")
+        log.info("【Client】manager deployed success...")
 
     def call_requester(self, data, need_ret=True):
         def handler(conn):

@@ -13,6 +13,7 @@ from utils.elgamal import ElGamal
 import pickle
 from Crypto.Random.random import randrange
 from multiprocessing import Lock
+import time
 
 
 class ElgamalEncryptor:

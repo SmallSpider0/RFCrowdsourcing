@@ -8,6 +8,7 @@ WORKDIR /usr/src/app
 COPY config ./config
 COPY prototype ./prototype
 COPY tmp/keypairs ./tmp/keypairs
+COPY tmp/cifar-10-batches-py ./tmp/cifar-10-batches-py
 COPY requirements.txt .
 COPY start_manager.py .
 
