@@ -34,7 +34,7 @@ class SystemInterfaceRemote:
         subtask_num,
         re_enc_num,
         public_key_file,
-        private_key_file
+        private_key_file,
     ):
         # 其它参数
         self.config = Config()
@@ -149,38 +149,42 @@ class SystemInterfaceRemote:
         log.info(f"【Client】enviroment deployed success...")
 
     # 连接远程服务器并启动管理进程
-    def start_manager(self, local=False):
+    def start_manager(self, local=0):
         def ssh_command_with_thread(server, command):
             # 这里执行 SSH 命令
             ret = ssh_command(server, command)
 
-        threads = []
-        if local:
-            log.info("【Client】deploying manager on local server ...")
-            server = self.server_list[0]
-            thread = threading.Thread(
-                target=ssh_command_with_thread,
-                args=(server, self.manager_start_command),
-            )
-            threads.append(thread)
+        if local == 0:
             for server in self.server_list:
                 server["ip"] = self.server_list[0]["ip"]
         else:
-            for server in self.server_list[1:]:
-                log.info(f"【Client】deploying manager on server {server['name']}...")
+            if local == 1:
+                threads = []
+                log.info("【Client】deploying manager on local server ...")
+                server = self.server_list[0]
                 thread = threading.Thread(
                     target=ssh_command_with_thread,
                     args=(server, self.manager_start_command),
                 )
                 threads.append(thread)
+                for server in self.server_list:
+                    server["ip"] = self.server_list[0]["ip"]
+            elif local == 2:
+                for server in self.server_list[1:]:
+                    log.info(f"【Client】deploying manager on server {server['name']}...")
+                    thread = threading.Thread(
+                        target=ssh_command_with_thread,
+                        args=(server, self.manager_start_command),
+                    )
+                    threads.append(thread)
 
-        # 启动所有线程
-        for thread in threads:
-            thread.start()
+            # 启动所有线程
+            for thread in threads:
+                thread.start()
 
-        # 等待所有线程完成
-        for thread in threads:
-            thread.join()
+            # 等待所有线程完成
+            for thread in threads:
+                thread.join()
 
         log.info("【Client】manager deployed success...")
 

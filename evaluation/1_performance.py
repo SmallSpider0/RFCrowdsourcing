@@ -16,10 +16,12 @@ import pickle
 
 CNT = 0
 ret = None
+ret2 = None
 
 
 def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
     global ret
+    global ret2
     ret = None
 
     public_key_file = f"tmp/keypairs/pk{key_len}.pkl"
@@ -31,7 +33,9 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
             print("elgamal_time", data)
             print("event/TASK_END")
             global ret
+            global ret2
             ret = time.time() - system.times["inited"]
+            ret2 = data
             print("dur", ret)
 
     # 启动分布式系统
@@ -46,7 +50,7 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
         private_key_file,
     )
     system.start_envs()
-    system.start_manager(True)
+    system.start_manager(1)
     system.run()
     for id in range(SUBMITTER_NUM):
         system.call_submitter(id, "start", False)
@@ -54,7 +58,7 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
 
     while True:
         if ret is not None:
-            return ret
+            return ret, ret2
         time.sleep(1)
 
 
@@ -82,24 +86,25 @@ paras = [
     [10, 10, 25, 4],
     [10, 10, 25, 6],
     [10, 10, 25, 8],
-    [10, 10, 25, 2],
-    [10, 10, 25, 4],
-    [10, 10, 25, 6],
-    [10, 10, 25, 8],
-    [10, 10, 25, 2],
-    [10, 10, 25, 4],
-    [10, 10, 25, 6],
-    [10, 10, 25, 8],
+    [10, 10, 50, 2],
+    [10, 10, 50, 4],
+    [10, 10, 50, 6],
+    [10, 10, 50, 8],
 ]
 
-eval(10, 10, 25, 2, 512)
-
-# for p in paras:
-#     for key_len in [2048]:
-#         ret = eval(p[0], p[1], p[2], p[3], key_len)
-#         with open("evaluation/results/results.txt", "a") as f:
-#             f.write(
-#                 str(key_len)
-#                 + ","
-#                 + (",".join([str(num) for num in p]) + ":" + str(ret) + "\n")
-#             )
+for p in paras:
+    for key_len in [512, 1024, 2048]:
+        A, B = eval(p[0], p[1], p[2], p[3], key_len)
+        with open("evaluation/results/results.txt", "a") as f:
+            f.write(
+                str(key_len)
+                + ","
+                + (
+                    ",".join([str(num) for num in p])
+                    + ":"
+                    + str(A)
+                    + ","
+                    + str(B)
+                    + "\n"
+                )
+            )
