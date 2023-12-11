@@ -17,9 +17,12 @@ CNT = 0
 ret = None
 
 
-def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, port):
+def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, key_len):
     global ret
     ret = None
+
+    public_key_file = f"tmp/keypairs/pk{key_len}.pkl"
+    private_key_file = f"tmp/keypairs/sk{key_len}.pkl"
 
     def server(instruction, conn, addr):
         if instruction == "event/TASK_END":
@@ -36,7 +39,8 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, port):
         RANDOMIZER_NUM,
         SUBTASK_NUM,
         RE_ENC_NUM,
-        port,
+        public_key_file,
+        private_key_file,
     )
     system.start_envs()
     system.start_manager(True)
@@ -51,65 +55,47 @@ def eval(SUBMITTER_NUM, RANDOMIZER_NUM, SUBTASK_NUM, RE_ENC_NUM, port):
         time.sleep(1)
 
 
-paras = [
-    [1, 10, 25, 3],
-    [1, 10, 25, 6],
-    [1, 10, 25, 9],
-    [1, 10, 25, 12],
-
-    [1, 20, 25, 3],
-    [1, 20, 25, 6],
-    [1, 20, 25, 9],
-    [1, 20, 25, 12],
-
-    [1, 30, 25, 3],
-    [1, 30, 25, 6],
-    [1, 30, 25, 9],
-    [1, 30, 25, 12],
-
-    [1, 40, 25, 3],
-    [1, 40, 25, 6],
-    [1, 40, 25, 9],
-    [1, 40, 25, 12],
-
-    [1, 50, 25, 3],
-    [1, 50, 25, 6],
-    [1, 50, 25, 9],
-    [1, 50, 25, 12],
-
-    [1, 10, 50, 3],
-    [1, 10, 50, 6],
-    [1, 10, 50, 9],
-    [1, 10, 50, 12],
-
-    [1, 20, 50, 3],
-    [1, 20, 50, 6],
-    [1, 20, 50, 9],
-    [1, 20, 50, 12],
-
-    [1, 30, 50, 3],
-    [1, 30, 50, 6],
-    [1, 30, 50, 9],
-    [1, 30, 50, 12],
-
-    [1, 40, 50, 3],
-    [1, 40, 50, 6],
-    [1, 40, 50, 9],
-    [1, 40, 50, 12],
-
-    [1, 50, 50, 3],
-    [1, 50, 50, 6],
-    [1, 50, 50, 9],
-    [1, 50, 50, 12],
-]
+# paras = [
+#     [10, 10, 25, 2],
+#     [10, 10, 25, 4],
+#     [10, 10, 25, 6],
+#     [10, 10, 25, 8],
+#     [10, 10, 50, 2],
+#     [10, 10, 50, 4],
+#     [10, 10, 50, 6],
+#     [10, 10, 50, 8],
+#     [10, 50, 25, 2],
+#     [10, 50, 25, 4],
+#     [10, 10, 25, 6],
+#     [10, 10, 25, 8],
+#     [10, 10, 50, 2],
+#     [10, 10, 50, 4],
+#     [10, 10, 50, 6],
+#     [10, 10, 50, 8],
+# ]
 
 paras = [
-    [1,10,10,1]
+    [10, 10, 25, 2],
+    [10, 10, 25, 4],
+    [10, 10, 25, 6],
+    [10, 10, 25, 8],
+    [10, 10, 25, 2],
+    [10, 10, 25, 4],
+    [10, 10, 25, 6],
+    [10, 10, 25, 8],
+    [10, 10, 25, 2],
+    [10, 10, 25, 4],
+    [10, 10, 25, 6],
+    [10, 10, 25, 8],
+
 ]
 
-port = 33333
 for p in paras:
-    for _ in range(1):
-        ret = eval(p[0], p[1], p[2], p[3], port)
+    for key_len in [2048]:
+        ret = eval(p[0], p[1], p[2], p[3], key_len)
         with open("evaluation/results/results.txt", "a") as f:
-            f.write((",".join([str(num) for num in p]) + ":" + str(ret) + "\n"))
+            f.write(
+                str(key_len)
+                + ","
+                + (",".join([str(num) for num in p]) + ":" + str(ret) + "\n")
+            )

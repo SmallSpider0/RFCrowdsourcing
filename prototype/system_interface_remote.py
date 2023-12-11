@@ -33,7 +33,8 @@ class SystemInterfaceRemote:
         randomizer_num,
         subtask_num,
         re_enc_num,
-        client_port = None,
+        public_key_file,
+        private_key_file
     ):
         # 其它参数
         self.config = Config()
@@ -68,8 +69,6 @@ class SystemInterfaceRemote:
         self.MANAGER_PORT_BASE = self.config.get_config("app").get("manager_port_base")
         self.ipfs_url = self.config.get_config("app").get("ipfs_url")
         self.web3_url = self.config.get_config("app").get("web3_url")
-        public_key_file = self.config.get_config("app").get("public_key_file")
-        private_key_file = self.config.get_config("app").get("private_key_file")
         with open(public_key_file, "rb") as f:
             self.public_key_str = pickle.load(f)
         with open(private_key_file, "rb") as f:
@@ -82,7 +81,7 @@ class SystemInterfaceRemote:
         self.envs_start_command = self.config.get_config("client").get(
             "envs_start_command"
         )
-        self.CLIENT_PORT = client_port or self.config.get_config("client").get("serving_port")
+        self.CLIENT_PORT = self.config.get_config("client").get("serving_port")
         self.CLIENT_IP = self.config.get_config("client").get("ip")
 
         # 【Requester】参数
@@ -159,14 +158,20 @@ class SystemInterfaceRemote:
         if local:
             log.info("deploying manager on local server ...")
             server = self.server_list[0]
-            thread = threading.Thread(target=ssh_command_with_thread, args=(server, self.manager_start_command))
+            thread = threading.Thread(
+                target=ssh_command_with_thread,
+                args=(server, self.manager_start_command),
+            )
             threads.append(thread)
             for server in self.server_list:
                 server["ip"] = self.server_list[0]["ip"]
         else:
             for server in self.server_list[1:]:
                 log.info(f"deploying manager on server {server['name']}...")
-                thread = threading.Thread(target=ssh_command_with_thread, args=(server, self.manager_start_command))
+                thread = threading.Thread(
+                    target=ssh_command_with_thread,
+                    args=(server, self.manager_start_command),
+                )
                 threads.append(thread)
 
         # 启动所有线程
@@ -319,7 +324,7 @@ class SystemInterfaceRemote:
             self.web3_url,
             requester_account[0],
             requester_account[1],
-            self.SUBTASK_NUM,
+            self.SUBTASK_NUM * 3,
             self.RE_ENC_NUM,
         )
         log.info(f"【Client】smart contract success deployed...")
