@@ -87,6 +87,9 @@ class CIFAR10Task(TaskInterface):
         for i in range(1, 6):
             batch = self.__unpickle(f"tmp/cifar-10-batches-py/data_batch_{i}")
             batches.append(batch[b"data"])
+            # 额外加入一个数据集BATCH
+            if i == 5:
+                batches.append(batch[b"data"])
 
         # 初始化类变量
         self.description = description
